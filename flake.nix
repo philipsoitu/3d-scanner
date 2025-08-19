@@ -16,6 +16,7 @@
             pkgs.zig
             pkgs.freenect
             pkgs.pkg-config
+            pkgs.usbutils
 
             pkgs.bashInteractive
             pkgs.ncurses
