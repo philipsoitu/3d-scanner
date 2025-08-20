@@ -21,44 +21,72 @@ pub const Kinect = struct {
             .depth_buffer = std.mem.zeroes([640 * 480]u11),
         };
 
+        // init context
         if (c.freenect_init(&k.ctx, null) < 0) {
             return error.InitFailed;
         }
 
+        // set logs
+        c.freenect_set_log_level(k.ctx, c.FREENECT_LOG_DEBUG);
+        c.freenect_select_subdevices(k.ctx, c.FREENECT_DEVICE_CAMERA);
+
+        // get num of device
         const num_devices = c.freenect_num_devices(k.ctx);
         if (num_devices == 0) {
             _ = c.freenect_shutdown(k.ctx);
             return error.NoDevice;
         }
 
+        // connect to device
         if (c.freenect_open_device(k.ctx, &k.dev, 0) != 0) {
             _ = c.freenect_shutdown(k.ctx);
             return error.DeviceOpenFailed;
         }
 
-        _ = c.freenect_set_user(k.dev, @as(?*c_void, @ptrCast(&k)));
+        // set modes
+        _ = c.freenect_set_depth_mode(k.dev, c.freenect_find_depth_mode(
+            c.FREENECT_RESOLUTION_MEDIUM,
+            c.FREENECT_DEPTH_MM,
+        ));
+        _ = c.freenect_set_video_mode(k.dev, c.freenect_find_video_mode(
+            c.FREENECT_RESOLUTION_MEDIUM,
+            c.FREENECT_VIDEO_RGB,
+        ));
 
-        _ = c.freenect_set_video_callback(k.dev, rgbCallback);
-        _ = c.freenect_set_depth_callback(k.dev, depthCallback);
+        // set callbacks
+        c.freenect_set_depth_callback(k.dev, depthCb);
+        c.freenect_set_video_callback(k.dev, videoCb);
 
-        _ = c.freenect_start_video(k.dev);
+        // start streams
         _ = c.freenect_start_depth(k.dev);
+        _ = c.freenect_start_video(k.dev);
 
         return k;
     }
 
+    pub fn runLoop(self: *Kinect) void {
+        while (true) {
+            const result = c.freenect_process_events(self.ctx);
+            if (result < 0) {
+                return error.EventLoopFailed;
+            }
+        }
+    }
+
     pub fn shutdown(self: *Kinect) void {
+        _ = c.freenect_stop_depth(self.dev);
+        _ = c.freenect_stop_video(self.dev);
         _ = c.freenect_close_device(self.dev);
         _ = c.freenect_shutdown(self.ctx);
     }
 };
-
-fn rgbCallback(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.C) void {
+// ----- CALLBAKCS -----
+fn depthCb(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.C) void {
     _ = .{ dev, data };
-    std.debug.print("rgb frame at: {}\n", .{timestamp});
+    std.debug.print("Received depth frame at {d}\n", .{timestamp});
 }
 
-fn depthCallback(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.C) void {
+fn videoCb(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.C) void {
     _ = .{ dev, data };
-    std.debug.print("depth frame at: {}\n", .{timestamp});
+    std.debug.print("Received video frame at {d}\n", .{timestamp});
 }
