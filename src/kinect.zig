@@ -10,15 +10,15 @@ pub const Kinect = struct {
     ctx: ?*c.freenect_context,
     dev: ?*c.freenect_device,
 
-    rgb_buffer: ?[640 * 480 * 3]u8,
-    depth_buffer: ?[640 * 480]u11,
+    rgb_buffer: [640 * 480 * 3]u8,
+    depth_buffer: [640 * 480]u11,
 
     pub fn init() !Kinect {
         var k = Kinect{
             .ctx = null,
             .dev = null,
-            .rgb_buffer = null,
-            .depth_buffer = null,
+            .rgb_buffer = std.mem.zeroes([640 * 480 * 3]u8),
+            .depth_buffer = std.mem.zeroes([640 * 480]u11),
         };
 
         if (c.freenect_init(&k.ctx, null) < 0) {
@@ -56,15 +56,12 @@ pub const Kinect = struct {
 fn rgbCallback(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.C) void {
     _ = timestamp;
     const k = @as(*Kinect, @ptrCast(@alignCast(c.freenect_get_user(dev))));
-    std.mem.copyForwards(u8, k.rgb_buffer[0..], data[0 .. 640 * 480 * 3]);
-    k.rgb_ready = true;
+    _ = k;
+    std.debug.print("{any}", .{data});
 }
 
 fn depthCallback(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.C) void {
     _ = timestamp;
     const k = @as(*Kinect, @ptrCast(@alignCast(c.freenect_get_user(dev))));
-    for (0..640 * 480, data[0 .. 640 * 480]) |i, val| {
-        k.depth_buffer[i] = @as(u11, @intCast(val & 0x7FF));
-    }
-    k.depth_ready = true;
+    _ = .{ k, data };
 }
