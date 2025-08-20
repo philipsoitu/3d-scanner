@@ -54,14 +54,11 @@ pub const Kinect = struct {
 };
 
 fn rgbCallback(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.C) void {
-    _ = timestamp;
-    const k = @as(*Kinect, @ptrCast(@alignCast(c.freenect_get_user(dev))));
-    _ = k;
-    std.debug.print("{any}", .{data});
+    _ = .{ dev, data };
+    std.debug.print("rgb frame at: {}\n", .{timestamp});
 }
 
 fn depthCallback(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.C) void {
-    _ = timestamp;
-    const k = @as(*Kinect, @ptrCast(@alignCast(c.freenect_get_user(dev))));
-    _ = .{ k, data };
+    _ = .{ dev, data };
+    std.debug.print("depth frame at: {}\n", .{timestamp});
 }
