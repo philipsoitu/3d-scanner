@@ -1,9 +1,13 @@
 const std = @import("std");
-const Frame = @import("frame.zig").Frame;
+const frame = @import("frame.zig");
 const kinect = @import("kinect.zig");
-const out = @import("out.zig");
 
 pub fn main() !void {
     var k = try kinect.Kinect.init();
     defer k.shutdown();
+
+    while (true) {
+        std.Thread.sleep(100_000);
+        std.debug.print(".", .{});
+    }
 }
