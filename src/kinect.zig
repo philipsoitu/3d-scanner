@@ -105,6 +105,24 @@ fn depthCb(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv
 }
 
 fn videoCb(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.C) void {
-    _ = .{ dev, data };
-    std.debug.print("Received video frame at {d}\n", .{timestamp});
+    _ = .{dev};
+    if (data) |raw| {
+        const rgb_ptr = @as([*]u8, @ptrCast(@alignCast(raw)));
+        const rgb_slice = rgb_ptr[0 .. 640 * 480];
+
+        var frame = Frame{
+            .rgb = rgb_slice,
+            .depth = &[_]u16{},
+            .width = 640,
+            .height = 480,
+        };
+
+        const filename = std.fmt.allocPrint(std.heap.c_allocator, "kinect_output/rgb/{d}.pgm", .{timestamp}) catch return;
+        defer std.heap.c_allocator.free(filename);
+
+        frame.save_rgb_ppm(filename) catch |err| {
+            std.debug.print("Failed to save rgb frame: {}\n", .{err});
+        };
+    }
+    std.debug.print("Received rgb frame at {d}\n", .{timestamp});
 }
