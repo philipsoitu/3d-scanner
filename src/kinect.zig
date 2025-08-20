@@ -117,7 +117,7 @@ fn videoCb(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv
             .height = 480,
         };
 
-        const filename = std.fmt.allocPrint(std.heap.c_allocator, "kinect_output/rgb/{d}.pgm", .{timestamp}) catch return;
+        const filename = std.fmt.allocPrint(std.heap.c_allocator, "kinect_output/rgb/{d}.ppm", .{timestamp}) catch return;
         defer std.heap.c_allocator.free(filename);
 
         frame.save_rgb_ppm(filename) catch |err| {
