@@ -5,6 +5,5 @@ const out = @import("out.zig");
 
 pub fn main() !void {
     var k = try kinect.Kinect.init();
-    std.debug.print("yoo: {any}\n", .{k});
     defer k.shutdown();
 }
