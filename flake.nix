@@ -10,11 +10,31 @@
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs { inherit system; };
+
+        # freenect + udev rules
+        freenect-with-udev = pkgs.freenect.overrideAttrs (old: {
+          postInstall = (old.postInstall or "") + ''
+            mkdir -p $out/lib/udev/rules.d
+            cat > $out/lib/udev/rules.d/99-kinect.rules <<'EOF'
+            # Xbox NUI Motor
+            SUBSYSTEM=="usb", ATTR{idVendor}=="045e", ATTR{idProduct}=="02b0", MODE:="0666"
+
+            # Xbox NUI Audio
+            SUBSYSTEM=="usb", ATTR{idVendor}=="045e", ATTR{idProduct}=="02ad", MODE:="0666"
+
+            # Xbox NUI Camera
+            SUBSYSTEM=="usb", ATTR{idVendor}=="045e", ATTR{idProduct}=="02ae", MODE:="0666"
+
+            # Xbox NUI Hub
+            SUBSYSTEM=="usb", ATTR{idVendor}=="045e", ATTR{idProduct}=="02c2", MODE:="0666"
+            EOF
+          '';
+        });
       in {
         devShells.default = pkgs.mkShell {
           buildInputs = [
             pkgs.zig
-            pkgs.freenect
+            freenect-with-udev
             pkgs.pkg-config
             pkgs.usbutils
 
