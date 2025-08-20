@@ -82,7 +82,25 @@ pub const Kinect = struct {
 };
 // ----- CALLBAKCS -----
 fn depthCb(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.C) void {
-    _ = .{ dev, data };
+    _ = .{dev};
+    if (data) |raw| {
+        const depth_ptr = @as([*]u16, @ptrCast(@alignCast(raw)));
+        const depth_slice = depth_ptr[0 .. 640 * 480];
+
+        var frame = Frame{
+            .rgb = &[_]u8{},
+            .depth = depth_slice,
+            .width = 640,
+            .height = 480,
+        };
+
+        const filename = std.fmt.allocPrint(std.heap.c_allocator, "kinect_output/depth/{d}.pgm", .{timestamp}) catch return;
+        defer std.heap.c_allocator.free(filename);
+
+        frame.save_depth_pgm(filename) catch |err| {
+            std.debug.print("Failed to save depth frame: {}\n", .{err});
+        };
+    }
     std.debug.print("Received depth frame at {d}\n", .{timestamp});
 }
 
