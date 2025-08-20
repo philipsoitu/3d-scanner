@@ -64,7 +64,7 @@ pub const Kinect = struct {
         return k;
     }
 
-    pub fn runLoop(self: *Kinect) void {
+    pub fn runLoop(self: *Kinect) !void {
         while (true) {
             const result = c.freenect_process_events(self.ctx);
             if (result < 0) {
