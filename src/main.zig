@@ -6,7 +6,12 @@ const c = @cImport({
 });
 
 pub fn main() !void {
-    var k: kinect.Kinect = try kinect.Kinect.init();
+    var starting_state = kinect.KinectState{
+        .depth_captured = false,
+        .rgb_captured = false,
+    };
+
+    var k: kinect.Kinect = try kinect.Kinect.init(&starting_state);
     defer k.shutdown();
 
     try k.runLoop();
