@@ -121,12 +121,7 @@ fn depthCb(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv
                 frame.save_depth_pgm(filename) catch |err| {
                     std.debug.print("Failed to save depth frame: {}\n", .{err});
                 };
-
-                var new_state = KinectState{
-                    .depth_captured = true,
-                    .rgb_captured = p.rgb_captured,
-                };
-                c.freenect_set_user(dev, @as(?*anyopaque, @ptrCast(&new_state)));
+                p.depth_captured = true;
             }
         } else {
             std.debug.print("already captured depth\n", .{});
@@ -158,11 +153,7 @@ fn videoCb(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv
                     std.debug.print("Failed to save rgb frame: {}\n", .{err});
                 };
 
-                var new_state = KinectState{
-                    .rgb_captured = true,
-                    .depth_captured = p.depth_captured,
-                };
-                c.freenect_set_user(dev, @as(?*anyopaque, @ptrCast(&new_state)));
+                p.rgb_captured = true;
             }
         } else {
             std.debug.print("already captured rgb\n", .{});
