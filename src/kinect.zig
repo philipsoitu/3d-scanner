@@ -108,7 +108,7 @@ fn videoCb(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv
     _ = .{dev};
     if (data) |raw| {
         const rgb_ptr = @as([*]u8, @ptrCast(@alignCast(raw)));
-        const rgb_slice = rgb_ptr[0 .. 640 * 480];
+        const rgb_slice = rgb_ptr[0 .. 640 * 480 * 3];
 
         var frame = Frame{
             .rgb = rgb_slice,
