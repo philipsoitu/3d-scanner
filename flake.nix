@@ -30,7 +30,14 @@
             EOF
           '';
         });
+
+        # Cross pkgs for Raspberry Pi (32-bit ARM)
+        pkgsRpi = import nixpkgs {
+          system = "x86_64-linux";
+          crossSystem = { config = "aarch64-unknown-linux-gnu"; };
+        };
       in {
+        # Native dev shell
         devShells.default = pkgs.mkShell {
           buildInputs = [
             pkgs.zig
@@ -46,6 +53,32 @@
             export SHELL=${pkgs.bashInteractive}/bin/bash
             export TERM=xterm-256color
             export INPUTRC=$HOME/.inputrc
+          '';
+        };
+
+        # Cross build for Raspberry Pi
+        packages.rpi = pkgs.stdenv.mkDerivation {
+          pname = "3d-scanner";
+          version = "0.1.0";
+
+          src = ./.;
+
+          nativeBuildInputs = [ pkgs.zig ];
+          buildInputs = [ pkgsRpi.freenect ];
+
+          buildPhase = ''
+            export ZIG_GLOBAL_CACHE_DIR=$TMPDIR/zig-global-cache
+            mkdir -p $ZIG_GLOBAL_CACHE_DIR
+
+            export FREENECT_INCLUDE=${pkgsRpi.freenect}/include
+            export FREENECT_LIB=${pkgsRpi.freenect}/lib
+
+            zig build -Dtarget=aarch64-linux-gnu -Dcpu=cortex_a72 --global-cache-dir $ZIG_GLOBAL_CACHE_DIR
+          '';
+
+          installPhase = ''
+            mkdir -p $out/bin
+            cp zig-out/bin/_3d_scanner $out/bin/
           '';
         };
       });

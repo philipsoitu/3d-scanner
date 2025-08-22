@@ -18,6 +18,15 @@ pub fn build(b: *std.Build) void {
     exe.linkLibC();
     exe.linkSystemLibrary("freenect");
 
+    // Pull in include path and lib path from env vars if set
+    if (std.process.getEnvVarOwned(b.allocator, "FREENECT_INCLUDE")) |include_path| {
+        exe.addIncludePath(.{ .cwd_relative = include_path });
+    } else |_| {}
+
+    if (std.process.getEnvVarOwned(b.allocator, "FREENECT_LIB")) |lib_path| {
+        exe.addLibraryPath(.{ .cwd_relative = lib_path });
+    } else |_| {}
+
     b.installArtifact(exe);
 
     const run_cmd = b.addRunArtifact(exe);
