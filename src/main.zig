@@ -14,6 +14,8 @@ pub fn main() !void {
     var k: kinect.Kinect = try kinect.Kinect.init(&starting_state);
     defer k.shutdown();
 
+    try k.runLoop();
+
     try frame.save_depth_pgm("kinect_output/depth.pgm");
     try frame.save_rgb_ppm("kinect_output/rgb.ppm");
 }

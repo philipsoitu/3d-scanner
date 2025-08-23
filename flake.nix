@@ -45,6 +45,8 @@
             pkgs.pkg-config
             pkgs.usbutils
 
+            pkgs.imagemagick
+
             pkgs.bashInteractive
             pkgs.ncurses
           ];
