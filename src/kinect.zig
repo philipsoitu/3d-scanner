@@ -113,8 +113,6 @@ fn depthCb(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv
                 p.frame.depth = depth_slice;
                 p.depth_captured = true;
             }
-        } else {
-            std.debug.print("already captured depth\n", .{});
         }
     }
 }
@@ -133,8 +131,6 @@ fn videoCb(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv
                 p.frame.rgb = rgb_slice;
                 p.rgb_captured = true;
             }
-        } else {
-            std.debug.print("already captured rgb\n", .{});
         }
     }
 }
