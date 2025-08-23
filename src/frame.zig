@@ -6,6 +6,15 @@ pub const Frame = struct {
     width: usize,
     height: usize,
 
+    pub fn init(width: usize, height: usize) Frame {
+        return Frame{
+            .rgb = &[_]u8{},
+            .depth = &[_]u16{},
+            .width = width,
+            .height = height,
+        };
+    }
+
     pub fn save_rgb_ppm(self: *Frame, filename: []const u8) !void {
         var file = try std.fs.cwd().createFile(filename, .{}); // fixed
         defer file.close();
