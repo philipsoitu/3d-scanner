@@ -1,7 +1,6 @@
 const std = @import("std");
 const kinect = @import("kinect.zig");
 const Frame = @import("frame.zig").Frame;
-const point_cloud = @import("point_cloud.zig");
 
 pub fn main() !void {
     var frame = Frame.init(640, 480);
@@ -15,5 +14,6 @@ pub fn main() !void {
     var k: kinect.Kinect = try kinect.Kinect.init(&starting_state);
     defer k.shutdown();
 
-    std.debug.print("{any}\n", .{frame});
+    frame.save_depth_pgm("kinect_ouput/depth.pgm");
+    frame.save_rgb_ppm("kinect_ouput/rgb.ppm");
 }
