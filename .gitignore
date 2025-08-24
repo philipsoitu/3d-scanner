@@ -1,3 +1,4 @@
 zig-out/
 .zig-cache/
 kinect_output/
+pointcloud.ply
