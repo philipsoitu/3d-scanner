@@ -93,6 +93,15 @@ pub const Kinect = struct {
     pub fn shutdown(self: *Kinect) void {
         _ = c.freenect_stop_depth(self.dev);
         _ = c.freenect_stop_video(self.dev);
+
+        // flush usb
+        _ = c.freenect_process_events(self.ctx);
+        _ = c.freenect_process_events(self.ctx);
+        _ = c.freenect_process_events(self.ctx);
+
+        // small delay
+        std.time.sleep(100 * std.time.ns_per_ms);
+
         _ = c.freenect_close_device(self.dev);
         _ = c.freenect_shutdown(self.ctx);
     }
