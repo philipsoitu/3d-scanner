@@ -16,7 +16,7 @@ const R = [3][3]f64{
     .{ 0.0, 1.0, 0.0 },
     .{ 0.0, 0.0, 1.0 },
 };
-const T = [3]f64{ 0.025, 0.0, 0.0 }; // ~2.5 cm baseline
+const T = [3]f64{ 0.020, 0.0, 0.0 }; // ~2.5 cm baseline
 
 pub const Point = struct {
     x: f64,
@@ -65,7 +65,7 @@ pub fn frameToPoints(allocator: std.mem.Allocator, frame: *Frame) ![]Point {
 
             points[count] = Point{
                 .x = pd[0],
-                .y = pd[1],
+                .y = -pd[1],
                 .z = pd[2],
                 .r = r,
                 .g = g,
