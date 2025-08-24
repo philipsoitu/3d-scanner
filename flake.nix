@@ -46,6 +46,7 @@
             pkgs.usbutils
 
             pkgs.imagemagick
+            pkgs.meshlab
 
             pkgs.bashInteractive
             pkgs.ncurses
