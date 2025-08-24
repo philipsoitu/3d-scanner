@@ -67,9 +67,9 @@ pub fn frameToPoints(allocator: std.mem.Allocator, frame: *Frame) ![]Point {
                 .x = pd[0],
                 .y = -pd[1],
                 .z = -pd[2],
-                .r = r,
-                .g = g,
-                .b = b,
+                .r = linearToSrgb(r),
+                .g = linearToSrgb(g),
+                .b = linearToSrgb(b),
             };
             count += 1;
         }
@@ -87,6 +87,15 @@ pub fn writePLY(points: []const Point, filename: []const u8) !void {
     );
 
     for (points) |p| {
-        try file.writer().print("{d:.3} {d:.3} {d:.3} {d} {d} {d}\n", .{ p.x, p.y, p.z, p.r, p.g, p.b });
+        try file.writer().print(
+            "{d:.3} {d:.3} {d:.3} {d} {d} {d}\n",
+            .{ p.x, p.y, p.z, p.r, p.g, p.b },
+        );
     }
+}
+
+fn linearToSrgb(c: u8) u8 {
+    const f = @as(f64, @floatFromInt(c)) / 255.0;
+    const srgb = if (f <= 0.0031308) 12.92 * f else 1.055 * std.math.pow(f64, 1.0 / 2.4) - 0.055;
+    return @as(u8, @intFromFloat(std.math.clamp(srgb * 255.0, 0, 255)));
 }
