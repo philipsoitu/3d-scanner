@@ -66,7 +66,7 @@ pub fn frameToPoints(allocator: std.mem.Allocator, frame: *Frame) ![]Point {
             points[count] = Point{
                 .x = pd[0],
                 .y = -pd[1],
-                .z = pd[2],
+                .z = -pd[2],
                 .r = r,
                 .g = g,
                 .b = b,
