@@ -18,6 +18,9 @@ pub fn main() !void {
     try k.runLoop();
     defer k.shutdown();
 
+    try frame.save_depth_pgm("kinect_output/depth.pgm");
+    try frame.save_rgb_ppm("kinect_output/rgb.ppm");
+
     const points = try point_cloud.frameToPoints(allocator, &frame);
     defer allocator.free(points);
 
