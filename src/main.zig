@@ -40,8 +40,8 @@ fn consumerThread(ctx: *ConsumerCtx) !void {
         };
         const filename = try std.fmt.bufPrint(
             &filename_buf,
-            "{s}_{d:06}{s}",
-            .{ ctx.prefix, frame.index, ext },
+            "{s}_{d}{s}",
+            .{ ctx.prefix, frame.timestamp, ext },
         );
 
         var file = try std.fs.cwd().createFile(filename, .{});
@@ -49,10 +49,10 @@ fn consumerThread(ctx: *ConsumerCtx) !void {
 
         // Write header
         switch (frame.type) {
-            .rgb => {
+            .Rgb => {
                 try file.writer().print("P6\n{d} {d}\n255\n", .{ frame.width, frame.height });
             },
-            .depth => {
+            .Depth => {
                 try file.writer().print("P5\n{d} {d}\n65535\n", .{ frame.width, frame.height });
             },
         }
