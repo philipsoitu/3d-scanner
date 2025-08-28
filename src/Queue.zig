@@ -1,29 +1,29 @@
 const std = @import("std");
-const Frame = @import("main.zig").Frame;
+const Frame = @import("frame.zig").Frame;
 
 pub const Queue = struct {
-    allocator: *std.mem.Allocator,
+    allocator: std.mem.Allocator,
     list: std.ArrayList(Frame),
     mutex: std.Thread.Mutex = .{},
     cond: std.Thread.Condition = .{},
     done: bool = false,
 
-    pub fn init(allocator: *std.mem.Allocator) Queue {
+    pub fn init(allocator: std.mem.Allocator) Queue {
         return Queue{
             .allocator = allocator,
-            .list = std.ArrayList(Frame).init(allocator.*),
+            .list = std.ArrayList(Frame){},
         };
     }
 
     pub fn deinit(self: *Queue) void {
-        self.list.deinit();
+        self.list.deinit(self.allocator);
     }
 
     pub fn push(self: *Queue, frame: Frame) !void {
         self.mutex.lock();
         defer self.mutex.unlock();
 
-        try self.list.append(frame);
+        try self.list.append(self.allocator, frame);
         self.cond.signal();
     }
 

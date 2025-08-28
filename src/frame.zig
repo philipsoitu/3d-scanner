@@ -1,51 +1,47 @@
 const std = @import("std");
 
-const Frame = struct {
-    data: []u8,
-    timestamp: c_int
-    width: usize,
-    height: usize,
-    channels: usize, // 3 for RGB, 2 for depth (16-bit)
-    kind: Kind,
-};
-
-const Kind = enum { rgb, depth };
-
+pub const FrameType = enum { Rgb, Depth };
 
 pub const Frame = struct {
-    rgb: []u8,
-    depth: []u16,
+    data: []u8,
+    timestamp: u32,
     width: usize,
     height: usize,
+    type: FrameType,
 
-    pub fn init(width: usize, height: usize) Frame {
-        return Frame{
-            .rgb = &[_]u8{},
-            .depth = &[_]u16{},
-            .width = width,
-            .height = height,
+    pub fn save(self: *const Frame, allocator: std.mem.Allocator) !void {
+        const file_ending = switch (self.type) {
+            .Rgb => "ppm",
+            .Depth => "pgm",
         };
-    }
+        const filename = try std.fmt.allocPrint(
+            allocator,
+            "kinect_output/{d}.{s}",
+            .{ self.timestamp, file_ending },
+        );
+        defer allocator.free(filename);
 
-    pub fn save_rgb_ppm(self: *Frame, filename: []const u8) !void {
-        var file = try std.fs.cwd().createFile(filename, .{}); // fixed
+        var file = try std.fs.cwd().createFile(filename, .{});
         defer file.close();
 
-        try file.writer().print("P6\n{d} {d}\n255\n", .{ self.*.width, self.*.height });
-        try file.writeAll(self.*.rgb);
-    }
+        var buf: [4096]u8 = undefined;
+        var file_writer = file.writer(&buf);
+        const w = &file_writer.interface;
 
-    pub fn save_depth_pgm(self: *Frame, filename: []const u8) !void {
-        var file = try std.fs.cwd().createFile(filename, .{}); // fixed
-        defer file.close();
-
-        try file.writer().print("P5\n{d} {d}\n2047\n", .{ self.*.width, self.*.height });
-
-        var buf: [2]u8 = undefined;
-        for (self.*.depth) |d| {
-            buf[0] = @as(u8, @intCast(d >> 8)); // high byte
-            buf[1] = @as(u8, @intCast(d & 0xFF)); // low byte
-            try file.writeAll(&buf);
+        // Header
+        switch (self.type) {
+            .Rgb => try w.print(
+                "P6\n{d} {d}\n255\n",
+                .{ self.width, self.height },
+            ),
+            .Depth => try w.print(
+                "P5\n{d} {d}\n65536\n",
+                .{ self.*.width, self.*.height },
+            ),
         }
+        // raw binary data
+        try w.writeAll(self.data);
+
+        try w.flush();
     }
 };

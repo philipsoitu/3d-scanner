@@ -1,7 +1,7 @@
 const std = @import("std");
 
 const c = @cImport({
-    @cInclude("libfreenect.h");
+    @cInclude("libfreenect/libfreenect.h");
 });
 
 const Frame = struct {
