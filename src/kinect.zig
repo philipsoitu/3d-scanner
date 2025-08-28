@@ -93,22 +93,13 @@ pub const Kinect = struct {
     pub fn shutdown(self: *Kinect) void {
         _ = c.freenect_stop_depth(self.dev);
         _ = c.freenect_stop_video(self.dev);
-
-        // flush usb
-        _ = c.freenect_process_events(self.ctx);
-        _ = c.freenect_process_events(self.ctx);
-        _ = c.freenect_process_events(self.ctx);
-
-        // small delay
-        std.time.sleep(100 * std.time.ns_per_ms);
-
         _ = c.freenect_close_device(self.dev);
         _ = c.freenect_shutdown(self.ctx);
     }
 };
 
 // ----- CALLBACKS -----
-fn depthCb(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.C) void {
+fn depthCb(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.c) void {
     _ = .{timestamp};
     const raw_ptr = c.freenect_get_user(dev);
     const state_ptr = @as(?*KinectState, @ptrCast(@alignCast(raw_ptr)));
@@ -126,7 +117,7 @@ fn depthCb(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv
     }
 }
 
-fn videoCb(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.C) void {
+fn videoCb(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.c) void {
     _ = .{timestamp};
     const raw_ptr = c.freenect_get_user(dev);
     const state_ptr = @as(?*KinectState, @ptrCast(@alignCast(raw_ptr)));

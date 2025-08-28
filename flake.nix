@@ -40,7 +40,7 @@
         # Native dev shell
         devShells.default = pkgs.mkShell {
           buildInputs = [
-            pkgs.zig
+            pkgs.zig_0_15
             freenect-with-udev
             pkgs.pkg-config
             pkgs.usbutils

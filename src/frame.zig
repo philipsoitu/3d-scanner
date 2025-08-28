@@ -19,21 +19,32 @@ pub const Frame = struct {
         var file = try std.fs.cwd().createFile(filename, .{}); // fixed
         defer file.close();
 
-        try file.writer().print("P6\n{d} {d}\n255\n", .{ self.*.width, self.*.height });
-        try file.writeAll(self.*.rgb);
+        var buf: [4096]u8 = undefined;
+        var file_writer = file.writer(&buf);
+        const w = &file_writer.interface;
+
+        try w.print("P6\n{d} {d}\n255\n", .{ self.*.width, self.*.height });
+        try w.writeAll(self.rgb);
+
+        try w.flush();
     }
 
     pub fn save_depth_pgm(self: *Frame, filename: []const u8) !void {
         var file = try std.fs.cwd().createFile(filename, .{}); // fixed
         defer file.close();
 
-        try file.writer().print("P5\n{d} {d}\n2047\n", .{ self.*.width, self.*.height });
+        var writer_buf: [4096]u8 = undefined;
+        var file_writer = file.writer(&writer_buf);
+        const w = &file_writer.interface;
+
+        try w.print("P5\n{d} {d}\n2047\n", .{ self.*.width, self.*.height });
 
         var buf: [2]u8 = undefined;
         for (self.*.depth) |d| {
             buf[0] = @as(u8, @intCast(d >> 8)); // high byte
             buf[1] = @as(u8, @intCast(d & 0xFF)); // low byte
-            try file.writeAll(&buf);
+            try w.writeAll(&buf);
         }
+        try w.flush();
     }
 };

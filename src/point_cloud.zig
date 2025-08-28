@@ -81,17 +81,22 @@ pub fn writePLY(points: []const Point, filename: []const u8) !void {
     var file = try std.fs.cwd().createFile(filename, .{}); // fixed
     defer file.close();
 
-    try file.writer().print(
+    var writer_buf: [4096]u8 = undefined;
+    var file_writer = file.writer(&writer_buf);
+    const w = &file_writer.interface;
+
+    try w.print(
         "ply\nformat ascii 1.0\nelement vertex {d}\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n",
         .{points.len},
     );
 
     for (points) |p| {
-        try file.writer().print(
+        try w.print(
             "{d:.3} {d:.3} {d:.3} {d} {d} {d}\n",
             .{ p.x, p.y, p.z, p.r, p.g, p.b },
         );
     }
+    try w.flush();
 }
 
 fn linearToSrgb(c: u8) u8 {
