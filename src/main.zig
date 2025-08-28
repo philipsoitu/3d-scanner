@@ -47,20 +47,26 @@ fn consumerThread(ctx: *ConsumerCtx) !void {
         var file = try std.fs.cwd().createFile(filename, .{});
         defer file.close();
 
+        var writer_buf: [4096]u8 = undefined;
+        var file_writer = file.writer(&writer_buf);
+        const w = &file_writer.interface;
+
         // Write header
         switch (frame.type) {
             .Rgb => {
-                try file.writer().print("P6\n{d} {d}\n255\n", .{ frame.width, frame.height });
+                try w.print("P6\n{d} {d}\n255\n", .{ frame.width, frame.height });
             },
             .Depth => {
-                try file.writer().print("P5\n{d} {d}\n65535\n", .{ frame.width, frame.height });
+                try w.print("P5\n{d} {d}\n65535\n", .{ frame.width, frame.height });
             },
         }
 
         // Write raw pixels
-        try file.writeAll(frame.data);
+        try w.writeAll(frame.data);
 
         ctx.pool.release(frame.data);
+
+        try w.flush();
     }
 }
 
@@ -157,7 +163,7 @@ pub fn main() !void {
 
     var dev: ?*c.freenect_device = null;
     if (c.freenect_open_device(ctx, &dev, 0) < 0 or dev == null) return error.OpenFailed;
-    defer c.freenect_close_device(dev);
+    defer _ = c.freenect_close_device(dev);
 
     // Pass pointer to our context
     c.freenect_set_user(dev, &dev_ctx);
@@ -167,8 +173,14 @@ pub fn main() !void {
     c.freenect_set_depth_callback(dev, depth_callback);
 
     // Configure streams
-    _ = c.freenect_set_video_format(dev, c.FREENECT_VIDEO_RGB);
-    _ = c.freenect_set_depth_format(dev, c.FREENECT_DEPTH_11BIT);
+    _ = c.freenect_set_depth_mode(dev, c.freenect_find_depth_mode(
+        c.FREENECT_RESOLUTION_MEDIUM,
+        c.FREENECT_DEPTH_MM,
+    ));
+    _ = c.freenect_set_video_mode(dev, c.freenect_find_video_mode(
+        c.FREENECT_RESOLUTION_MEDIUM,
+        c.FREENECT_VIDEO_RGB,
+    ));
 
     // Start streams
     _ = c.freenect_start_video(dev);
