@@ -15,14 +15,14 @@ pub fn main() !void {
     var rgb_pool = try BufferPool.init(
         allocator,
         config.POOL_SIZE,
-        config.WIDTH * config.HEIGHT * config.RGB_BYTES,
+        config.RGB_BUFFER_SIZE,
     );
     defer rgb_pool.deinit();
 
     var depth_pool = try BufferPool.init(
         allocator,
         config.POOL_SIZE,
-        config.WIDTH * config.HEIGHT * config.DEPTH_BYTES,
+        config.DEPTH_BUFFER_SIZE,
     );
     defer depth_pool.deinit();
 
@@ -31,11 +31,16 @@ pub fn main() !void {
     var depth_queue = Queue.init(allocator);
     defer depth_queue.deinit();
 
-    var rgb_ctx = multithreaded.ConsumerCtx{ .queue = &rgb_queue, .pool = &rgb_pool, .prefix = "rgb", .frame_type = .Rgb };
-    var depth_ctx = multithreaded.ConsumerCtx{ .queue = &depth_queue, .pool = &depth_pool, .prefix = "depth", .frame_type = .Depth };
-
-    var rgb_consumer = try std.Thread.spawn(.{}, multithreaded.consumerThread, .{&rgb_ctx});
-    var depth_consumer = try std.Thread.spawn(.{}, multithreaded.consumerThread, .{&depth_ctx});
+    var rgb_consumer = try std.Thread.spawn(
+        .{},
+        multithreaded.consumerThread,
+        .{ &rgb_queue, &rgb_pool },
+    );
+    var depth_consumer = try std.Thread.spawn(
+        .{},
+        multithreaded.consumerThread,
+        .{ &depth_queue, &depth_pool },
+    );
 
     var kinect_ctx = kinect.KinectCtx{
         .rgb_queue = &rgb_queue,

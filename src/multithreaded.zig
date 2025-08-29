@@ -4,21 +4,17 @@ const BufferPool = @import("BufferPool.zig").BufferPool;
 const Frame = @import("frame.zig").Frame;
 const FrameType = @import("frame.zig").FrameType;
 
-pub const ConsumerCtx = struct {
+pub fn consumerThread(
     queue: *Queue,
     pool: *BufferPool,
-    prefix: []const u8,
-    frame_type: FrameType,
-};
-
-pub fn consumerThread(ctx: *ConsumerCtx) !void {
+) !void {
     while (true) {
-        const maybe_frame = ctx.queue.pop();
+        const maybe_frame = queue.pop();
         if (maybe_frame == null) break;
 
         const frame = maybe_frame.?;
         try frame.save();
 
-        ctx.pool.release(frame.data);
+        pool.release(frame.data);
     }
 }
