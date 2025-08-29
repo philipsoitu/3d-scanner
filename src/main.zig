@@ -195,7 +195,10 @@ pub fn main() !void {
     // Run event loop for ~10 seconds
     const start_time = std.time.milliTimestamp();
     while (std.time.milliTimestamp() - start_time < 10_000) {
-        if (c.freenect_process_events(ctx) < 0) break;
+        const result = c.freenect_process_events(ctx);
+        if (result < 0) {
+            return error.EventLoopFailed;
+        }
     }
 
     // Stop streams
