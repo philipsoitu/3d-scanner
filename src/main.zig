@@ -175,8 +175,8 @@ pub fn main() !void {
     c.freenect_set_user(dev, &dev_ctx);
 
     // Set callbacks
-    c.freenect_set_video_callback(dev, rgb_callback);
     c.freenect_set_depth_callback(dev, depth_callback);
+    c.freenect_set_video_callback(dev, rgb_callback);
 
     // Configure streams
     _ = c.freenect_set_depth_mode(dev, c.freenect_find_depth_mode(
@@ -189,8 +189,8 @@ pub fn main() !void {
     ));
 
     // Start streams
-    _ = c.freenect_start_video(dev);
     _ = c.freenect_start_depth(dev);
+    _ = c.freenect_start_video(dev);
 
     // Run event loop for ~10 seconds
     const start_time = std.time.milliTimestamp();
