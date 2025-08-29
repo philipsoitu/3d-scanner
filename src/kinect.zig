@@ -1,30 +1,28 @@
 const std = @import("std");
 const Frame = @import("frame.zig").Frame;
+const Queue = @import("Queue.zig").Queue;
+const BufferPool = @import("BufferPool.zig").BufferPool;
 const c = @cImport({
     @cInclude("libfreenect/libfreenect.h");
 });
 
-const c_void = extern struct {};
-
-pub const KinectState = struct {
-    depth_captured: bool,
-    rgb_captured: bool,
-    frame: *Frame,
+pub const KinectCtx = struct {
+    rgb_queue: *Queue,
+    rgb_pool: *BufferPool,
+    rgb_index: usize,
+    depth_queue: *Queue,
+    depth_pool: *BufferPool,
+    depth_index: usize,
 };
 
 pub const Kinect = struct {
     ctx: ?*c.freenect_context,
     dev: ?*c.freenect_device,
 
-    rgb_buffer: [640 * 480 * 3]u8,
-    depth_buffer: [640 * 480]u16,
-
-    pub fn init(starting_state: ?*KinectState) !Kinect {
+    pub fn init(kinect_ctx: *KinectCtx) !Kinect {
         var k = Kinect{
             .ctx = null,
             .dev = null,
-            .rgb_buffer = std.mem.zeroes([640 * 480 * 3]u8),
-            .depth_buffer = std.mem.zeroes([640 * 480]u16),
         };
 
         // init context
@@ -49,7 +47,7 @@ pub const Kinect = struct {
             return error.DeviceOpenFailed;
         }
 
-        c.freenect_set_user(k.dev, @as(?*anyopaque, @ptrCast(starting_state)));
+        c.freenect_set_user(k.dev, kinect_ctx);
 
         // set modes
         _ = c.freenect_set_depth_mode(k.dev, c.freenect_find_depth_mode(
@@ -62,8 +60,8 @@ pub const Kinect = struct {
         ));
 
         // set callbacks
-        c.freenect_set_depth_callback(k.dev, depthCb);
-        c.freenect_set_video_callback(k.dev, videoCb);
+        c.freenect_set_depth_callback(k.dev, depth_callback);
+        c.freenect_set_video_callback(k.dev, rgb_callback);
 
         // start streams
         _ = c.freenect_start_depth(k.dev);
@@ -73,16 +71,8 @@ pub const Kinect = struct {
     }
 
     pub fn runLoop(self: *Kinect) !void {
-        while (true) {
-            const raw_ptr = c.freenect_get_user(self.dev);
-            const state_ptr = @as(?*KinectState, @ptrCast(@alignCast(raw_ptr)));
-
-            if (state_ptr) |p| {
-                if (p.depth_captured and p.rgb_captured) {
-                    return;
-                }
-            }
-
+        const start_time = std.time.milliTimestamp();
+        while (std.time.milliTimestamp() - start_time < 10_000) {
             const result = c.freenect_process_events(self.ctx);
             if (result < 0) {
                 return error.EventLoopFailed;
@@ -98,39 +88,52 @@ pub const Kinect = struct {
     }
 };
 
-// ----- CALLBACKS -----
-fn depthCb(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.c) void {
-    _ = .{timestamp};
-    const raw_ptr = c.freenect_get_user(dev);
-    const state_ptr = @as(?*KinectState, @ptrCast(@alignCast(raw_ptr)));
+export fn rgb_callback(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.c) void {
+    if (dev == null) return;
 
-    if (state_ptr) |p| {
-        if (!p.depth_captured) {
-            if (data) |raw| {
-                const depth_ptr = @as([*]u16, @ptrCast(@alignCast(raw)));
-                const depth_slice = depth_ptr[0 .. 640 * 480];
+    const user = c.freenect_get_user(dev);
+    if (user == null) return;
+    var ctx = @as(*KinectCtx, @ptrCast(@alignCast(user)));
 
-                p.frame.depth = depth_slice;
-                p.depth_captured = true;
-            }
-        }
-    }
+    const width = 640;
+    const height = 480;
+
+    const buf = ctx.rgb_pool.acquire();
+    const raw_data = data.?;
+    const slice = @as([*]const u8, @ptrCast(raw_data))[0..buf.len];
+    @memcpy(buf, slice);
+
+    ctx.rgb_queue.push(Frame{
+        .data = buf,
+        .timestamp = timestamp,
+        .width = width,
+        .height = height,
+        .type = .Rgb,
+    }) catch {};
+    ctx.rgb_index += 1;
 }
 
-fn videoCb(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.c) void {
-    _ = .{timestamp};
-    const raw_ptr = c.freenect_get_user(dev);
-    const state_ptr = @as(?*KinectState, @ptrCast(@alignCast(raw_ptr)));
+export fn depth_callback(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.c) void {
+    if (dev == null or data == null) return;
 
-    if (state_ptr) |p| {
-        if (!p.rgb_captured) {
-            if (data) |raw| {
-                const rgb_ptr = @as([*]u8, @ptrCast(@alignCast(raw)));
-                const rgb_slice = rgb_ptr[0 .. 640 * 480 * 3];
+    const user = c.freenect_get_user(dev);
+    if (user == null) return;
+    var ctx = @as(*KinectCtx, @ptrCast(@alignCast(user)));
 
-                p.frame.rgb = rgb_slice;
-                p.rgb_captured = true;
-            }
-        }
-    }
+    const width = 640;
+    const height = 480;
+
+    const buf = ctx.depth_pool.acquire();
+    const raw_data = data.?;
+    const slice = @as([*]const u8, @ptrCast(raw_data))[0..buf.len];
+    @memcpy(buf, slice);
+
+    ctx.depth_queue.push(Frame{
+        .data = buf,
+        .timestamp = timestamp,
+        .width = width,
+        .height = height,
+        .type = .Depth,
+    }) catch {};
+    ctx.depth_index += 1;
 }

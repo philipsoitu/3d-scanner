@@ -1,28 +1,59 @@
 const std = @import("std");
 const kinect = @import("kinect.zig");
-const Frame = @import("frame.zig").Frame;
 const point_cloud = @import("point_cloud.zig");
+const multithreaded = @import("multithreaded.zig");
+const config = @import("config.zig");
+
+const Queue = @import("Queue.zig").Queue;
+const BufferPool = @import("BufferPool.zig").BufferPool;
+const Frame = @import("frame.zig").Frame;
+const FrameType = @import("frame.zig").FrameType;
 
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
-    var frame = Frame.init(640, 480);
+    var rgb_pool = try BufferPool.init(
+        allocator,
+        config.POOL_SIZE,
+        config.WIDTH * config.HEIGHT * config.RGB_BYTES,
+    );
+    defer rgb_pool.deinit();
 
-    var starting_state = kinect.KinectState{
-        .depth_captured = false,
-        .rgb_captured = false,
-        .frame = &frame,
+    var depth_pool = try BufferPool.init(
+        allocator,
+        config.POOL_SIZE,
+        config.WIDTH * config.HEIGHT * config.DEPTH_BYTES,
+    );
+    defer depth_pool.deinit();
+
+    var rgb_queue = Queue.init(allocator);
+    defer rgb_queue.deinit();
+    var depth_queue = Queue.init(allocator);
+    defer depth_queue.deinit();
+
+    var rgb_ctx = multithreaded.ConsumerCtx{ .queue = &rgb_queue, .pool = &rgb_pool, .prefix = "rgb", .frame_type = .Rgb };
+    var depth_ctx = multithreaded.ConsumerCtx{ .queue = &depth_queue, .pool = &depth_pool, .prefix = "depth", .frame_type = .Depth };
+
+    var rgb_consumer = try std.Thread.spawn(.{}, multithreaded.consumerThread, .{&rgb_ctx});
+    var depth_consumer = try std.Thread.spawn(.{}, multithreaded.consumerThread, .{&depth_ctx});
+
+    var kinect_ctx = kinect.KinectCtx{
+        .rgb_queue = &rgb_queue,
+        .rgb_pool = &rgb_pool,
+        .rgb_index = 0,
+        .depth_queue = &depth_queue,
+        .depth_pool = &depth_pool,
+        .depth_index = 0,
     };
 
-    var k: kinect.Kinect = try kinect.Kinect.init(&starting_state);
+    var k = try kinect.Kinect.init(&kinect_ctx);
     try k.runLoop();
     defer k.shutdown();
 
-    try frame.save_depth_pgm("kinect_output/depth.pgm");
-    try frame.save_rgb_ppm("kinect_output/rgb.ppm");
+    // Signal consumers and wait
+    rgb_queue.finish();
+    depth_queue.finish();
 
-    const points = try point_cloud.frameToPoints(allocator, &frame);
-    defer allocator.free(points);
-
-    try point_cloud.writePLY(points, "pointcloud.ply");
+    rgb_consumer.join();
+    depth_consumer.join();
 }

@@ -1,50 +1,57 @@
 const std = @import("std");
+const config = @import("config.zig");
+
+pub const FrameType = enum { Rgb, Depth };
 
 pub const Frame = struct {
-    rgb: []u8,
-    depth: []u16,
+    data: []u8,
+    timestamp: u32,
     width: usize,
     height: usize,
+    type: FrameType,
 
-    pub fn init(width: usize, height: usize) Frame {
-        return Frame{
-            .rgb = &[_]u8{},
-            .depth = &[_]u16{},
-            .width = width,
-            .height = height,
+    pub fn save(self: *const Frame) !void {
+        const prefix = switch (self.type) {
+            .Rgb => "rgb",
+            .Depth => "depth",
         };
-    }
+        const ext = switch (self.type) {
+            .Rgb => "ppm",
+            .Depth => "pgm",
+        };
 
-    pub fn save_rgb_ppm(self: *Frame, filename: []const u8) !void {
-        var file = try std.fs.cwd().createFile(filename, .{}); // fixed
+        var filename_buf: [128]u8 = undefined;
+
+        const filename = try std.fmt.bufPrint(
+            &filename_buf,
+            "{s}/{s}/{d}.{s}",
+            .{ config.OUTPUT_LOCATION, prefix, self.timestamp, ext },
+        );
+
+        var file = try std.fs.cwd().createFile(filename, .{});
         defer file.close();
 
         var buf: [4096]u8 = undefined;
         var file_writer = file.writer(&buf);
         const w = &file_writer.interface;
 
-        try w.print("P6\n{d} {d}\n255\n", .{ self.*.width, self.*.height });
-        try w.writeAll(self.rgb);
-
-        try w.flush();
-    }
-
-    pub fn save_depth_pgm(self: *Frame, filename: []const u8) !void {
-        var file = try std.fs.cwd().createFile(filename, .{}); // fixed
-        defer file.close();
-
-        var writer_buf: [4096]u8 = undefined;
-        var file_writer = file.writer(&writer_buf);
-        const w = &file_writer.interface;
-
-        try w.print("P5\n{d} {d}\n2047\n", .{ self.*.width, self.*.height });
-
-        var buf: [2]u8 = undefined;
-        for (self.*.depth) |d| {
-            buf[0] = @as(u8, @intCast(d >> 8)); // high byte
-            buf[1] = @as(u8, @intCast(d & 0xFF)); // low byte
-            try w.writeAll(&buf);
+        // Header
+        switch (self.type) {
+            .Rgb => try w.print(
+                "P6\n{d} {d}\n255\n",
+                .{ self.width, self.height },
+            ),
+            .Depth => try w.print(
+                "P5\n{d} {d}\n65536\n",
+                .{ self.*.width, self.*.height },
+            ),
         }
+        // raw binary data
+        try w.writeAll(self.data);
+
+        //cleanup
         try w.flush();
+
+        std.debug.print("saved file: {s}\n", .{filename});
     }
 };
