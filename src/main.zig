@@ -40,9 +40,11 @@ fn consumerThread(ctx: *ConsumerCtx) !void {
         };
         const filename = try std.fmt.bufPrint(
             &filename_buf,
-            "{s}_{d}{s}",
+            "kinect_output/{s}_{d}{s}",
             .{ ctx.prefix, frame.timestamp, ext },
         );
+
+        std.debug.print("{s}\n", .{filename});
 
         var file = try std.fs.cwd().createFile(filename, .{});
         defer file.close();
@@ -74,6 +76,8 @@ fn consumerThread(ctx: *ConsumerCtx) !void {
 export fn rgb_callback(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.c) void {
     if (dev == null) return;
 
+    std.debug.print("rgb: received\n", .{});
+
     const user = c.freenect_get_user(dev);
     if (user == null) return;
     var ctx = @as(*DeviceCtx, @ptrCast(@alignCast(user)));
@@ -99,6 +103,8 @@ export fn rgb_callback(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u
 /// Callback: Depth
 export fn depth_callback(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u32) callconv(.c) void {
     if (dev == null or data == null) return;
+
+    std.debug.print("depth: received\n", .{});
 
     const user = c.freenect_get_user(dev);
     if (user == null) return;
