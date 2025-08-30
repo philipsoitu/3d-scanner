@@ -51,11 +51,11 @@ pub const Kinect = struct {
 
         // set modes
         _ = c.freenect_set_depth_mode(k.dev, c.freenect_find_depth_mode(
-            c.FREENECT_RESOLUTION_LOW,
+            c.FREENECT_RESOLUTION_MEDIUM,
             c.FREENECT_DEPTH_MM,
         ));
         _ = c.freenect_set_video_mode(k.dev, c.freenect_find_video_mode(
-            c.FREENECT_RESOLUTION_LOW,
+            c.FREENECT_RESOLUTION_MEDIUM,
             c.FREENECT_VIDEO_RGB,
         ));
 
@@ -64,15 +64,20 @@ pub const Kinect = struct {
         c.freenect_set_video_callback(k.dev, rgb_callback);
 
         // start streams
-        _ = c.freenect_start_depth(k.dev);
-        _ = c.freenect_start_video(k.dev);
+        const depth_res = c.freenect_start_depth(k.dev);
+        const rgb_res = c.freenect_start_video(k.dev);
+
+        std.debug.print(
+            "depth start: {d} rgb_res: {d}\n",
+            .{ depth_res, rgb_res },
+        );
 
         return k;
     }
 
     pub fn runLoop(self: *Kinect) !void {
         const start_time = std.time.milliTimestamp();
-        while (std.time.milliTimestamp() - start_time < 5_000) {
+        while (std.time.milliTimestamp() - start_time < 10_000) {
             const result = c.freenect_process_events(self.ctx);
             if (result < 0) {
                 return error.EventLoopFailed;
