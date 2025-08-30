@@ -55,9 +55,10 @@ pub fn main() !void {
 
     // small delay to let the kinect start up
     std.debug.print("starting kinect, main loop will run in 5 seconds\n", .{});
+    std.Thread.sleep(std.time.ns_per_s);
     for (0..5) |i| {
         std.Thread.sleep(std.time.ns_per_s);
-        std.debug.print("{}\n", .{5 - i});
+        std.debug.print("{}\n", .{5 - i - 1});
     }
     std.debug.print("running main loop\n", .{});
 
