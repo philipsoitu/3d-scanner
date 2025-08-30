@@ -64,15 +64,18 @@ pub const Kinect = struct {
         c.freenect_set_video_callback(k.dev, rgb_callback);
 
         // start streams
-        _ = c.freenect_start_depth(k.dev);
         _ = c.freenect_start_video(k.dev);
+
+        std.Thread.sleep(50 * std.time.ns_per_ms); // 50ms delay fix?
+
+        _ = c.freenect_start_depth(k.dev);
 
         return k;
     }
 
     pub fn runLoop(self: *Kinect) !void {
         const start_time = std.time.milliTimestamp();
-        while (std.time.milliTimestamp() - start_time < 10_000) {
+        while (std.time.milliTimestamp() - start_time < 5_000) {
             const result = c.freenect_process_events(self.ctx);
             if (result < 0) {
                 return error.EventLoopFailed;
