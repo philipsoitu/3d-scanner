@@ -42,7 +42,7 @@ pub const Frame = struct {
                 .{ self.width, self.height },
             ),
             .Depth => try w.print(
-                "P5\n{d} {d}\n65536\n",
+                "P5\n{d} {d}\n65535\n",
                 .{ self.*.width, self.*.height },
             ),
         }
