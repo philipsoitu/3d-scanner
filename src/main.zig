@@ -52,6 +52,12 @@ pub fn main() !void {
     };
 
     var k = try kinect.Kinect.init(&kinect_ctx);
+
+    // small delay to let the kinect start up
+    std.debug.print("starting kinect, main loop will run in 5 seconds\n", .{});
+    std.Thread.sleep(5 * std.time.ns_per_s);
+    std.debug.print("running main loop\n", .{});
+
     try k.runLoop();
     defer k.shutdown();
 

@@ -64,13 +64,8 @@ pub const Kinect = struct {
         c.freenect_set_video_callback(k.dev, rgb_callback);
 
         // start streams
-        const depth_res = c.freenect_start_depth(k.dev);
-        const rgb_res = c.freenect_start_video(k.dev);
-
-        std.debug.print(
-            "depth start: {d} rgb_res: {d}\n",
-            .{ depth_res, rgb_res },
-        );
+        _ = c.freenect_start_depth(k.dev);
+        _ = c.freenect_start_video(k.dev);
 
         return k;
     }
