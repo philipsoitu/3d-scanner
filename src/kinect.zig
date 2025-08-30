@@ -51,11 +51,11 @@ pub const Kinect = struct {
 
         // set modes
         _ = c.freenect_set_depth_mode(k.dev, c.freenect_find_depth_mode(
-            c.FREENECT_RESOLUTION_MEDIUM,
+            c.FREENECT_RESOLUTION_LOW,
             c.FREENECT_DEPTH_MM,
         ));
         _ = c.freenect_set_video_mode(k.dev, c.freenect_find_video_mode(
-            c.FREENECT_RESOLUTION_MEDIUM,
+            c.FREENECT_RESOLUTION_LOW,
             c.FREENECT_VIDEO_RGB,
         ));
 
@@ -64,11 +64,8 @@ pub const Kinect = struct {
         c.freenect_set_video_callback(k.dev, rgb_callback);
 
         // start streams
-        _ = c.freenect_start_video(k.dev);
-
-        std.Thread.sleep(50 * std.time.ns_per_ms); // 50ms delay fix?
-
         _ = c.freenect_start_depth(k.dev);
+        _ = c.freenect_start_video(k.dev);
 
         return k;
     }
