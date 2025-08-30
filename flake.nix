@@ -66,7 +66,7 @@
 
           src = ./.;
 
-          nativeBuildInputs = [ pkgs.zig ];
+          nativeBuildInputs = [ pkgs.zig_0_15 ];
           buildInputs = [ pkgsRpi.freenect ];
 
           buildPhase = ''
