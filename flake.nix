@@ -47,6 +47,7 @@
 
             pkgs.imagemagick
             pkgs.meshlab
+            pkgs.cloudcompare
 
             pkgs.bashInteractive
             pkgs.ncurses
