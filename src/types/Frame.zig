@@ -1,14 +1,12 @@
 const std = @import("std");
-const config = @import("config.zig");
-
-pub const FrameType = enum { Rgb, Depth };
+const config = @import("../config.zig");
 
 pub const Frame = struct {
     data: []u8,
     timestamp: u32,
     width: usize,
     height: usize,
-    type: FrameType,
+    type: enum { Rgb, Depth },
 
     pub fn save(self: *const Frame) !void {
         const prefix = switch (self.type) {

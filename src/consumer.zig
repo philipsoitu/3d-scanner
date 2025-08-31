@@ -1,10 +1,9 @@
 const std = @import("std");
-const Queue = @import("Queue.zig").Queue;
-const BufferPool = @import("BufferPool.zig").BufferPool;
-const Frame = @import("frame.zig").Frame;
-const FrameType = @import("frame.zig").FrameType;
+const Queue = @import("types/Queue.zig").Queue;
+const BufferPool = @import("types/BufferPool.zig").BufferPool;
+const Frame = @import("types/Frame.zig").Frame;
 
-pub fn consumerThread(
+pub fn thread(
     queue: *Queue,
     pool: *BufferPool,
 ) !void {

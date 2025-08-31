@@ -1,5 +1,5 @@
 const std = @import("std");
-const Frame = @import("frame.zig").Frame;
+const Frame = @import("types/Frame.zig").Frame;
 
 const depth_fx: f64 = 594.21;
 const depth_fy: f64 = 591.04;

@@ -1,7 +1,7 @@
 const std = @import("std");
-const Frame = @import("frame.zig").Frame;
-const Queue = @import("Queue.zig").Queue;
-const BufferPool = @import("BufferPool.zig").BufferPool;
+const Frame = @import("types/Frame.zig").Frame;
+const Queue = @import("types/Queue.zig").Queue;
+const BufferPool = @import("types/BufferPool.zig").BufferPool;
 const c = @cImport({
     @cInclude("libfreenect/libfreenect.h");
 });

@@ -1,5 +1,5 @@
 const std = @import("std");
-const Frame = @import("frame.zig").Frame;
+const Frame = @import("Frame.zig").Frame;
 
 pub const Queue = struct {
     allocator: std.mem.Allocator,
