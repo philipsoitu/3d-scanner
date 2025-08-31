@@ -42,7 +42,11 @@
           buildInputs = [
             pkgs.zig_0_15
             freenect-with-udev
+            pkgs.linuxHeaders
+            pkgs.glibc
             pkgs.pkg-config
+
+            pkgs.i2c-tools
             pkgs.usbutils
 
             pkgs.imagemagick

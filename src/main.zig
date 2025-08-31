@@ -4,6 +4,7 @@ const point_cloud = @import("point_cloud.zig");
 const consumer = @import("consumer.zig");
 const config = @import("config.zig");
 const cli = @import("cli.zig");
+const imu = @import("imu.zig");
 
 const capture = @import("capture.zig").run;
 const generate = @import("generate.zig").run;
@@ -15,6 +16,7 @@ const Frame = @import("types/Frame.zig").Frame;
 const commands = [_]cli.Command{
     .{ .name = "capture", .handler = capture },
     .{ .name = "generate", .handler = generate },
+    .{ .name = "test-imu", .handler = imu.testImu },
 };
 
 pub fn main() !void {
