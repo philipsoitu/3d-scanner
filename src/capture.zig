@@ -20,8 +20,16 @@ pub fn run(allocator: std.mem.Allocator) !void {
     var depth_queue = Queue.init(allocator);
     defer depth_queue.deinit();
 
-    var rgb_thread = try std.Thread.spawn(.{}, consumer.thread, .{ &rgb_queue, &rgb_pool });
-    var depth_thread = try std.Thread.spawn(.{}, consumer.thread, .{ &depth_queue, &depth_pool });
+    var rgb_thread = try std.Thread.spawn(
+        .{},
+        consumer.thread,
+        .{ &rgb_queue, &rgb_pool },
+    );
+    var depth_thread = try std.Thread.spawn(
+        .{},
+        consumer.thread,
+        .{ &depth_queue, &depth_pool },
+    );
 
     var kinect_ctx = kinect.KinectCtx{
         .rgb_queue = &rgb_queue,
