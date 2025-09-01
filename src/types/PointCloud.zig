@@ -1,5 +1,14 @@
 const std = @import("std");
-const Frame = @import("types/Frame.zig").Frame;
+const Frame = @import("Frame.zig").Frame;
+
+pub const Point3D = struct {
+    x: f64,
+    y: f64,
+    z: f64,
+    r: u8,
+    g: u8,
+    b: u8,
+};
 
 const depth_fx: f64 = 594.21;
 const depth_fy: f64 = 591.04;
@@ -16,7 +25,7 @@ const R = [3][3]f64{
     .{ 0.0, 1.0, 0.0 },
     .{ 0.0, 0.0, 1.0 },
 };
-const T = [3]f64{ 0.020, 0.0, 0.0 }; // ~2.5 cm baseline
+const T = [3]f64{ 0.020, 0.0, 0.0 }; // ~2.5 cm distance between cameras
 
 pub const Point = struct {
     x: f64,
@@ -27,14 +36,14 @@ pub const Point = struct {
     b: u8,
 };
 
-pub fn frameToPoints(allocator: std.mem.Allocator, frame: *Frame) ![]Point {
-    var points = try allocator.alloc(Point, frame.height * frame.width);
+pub fn frameToPoints(allocator: std.mem.Allocator, depth_frame: *Frame, rgb_frame: *Frame) ![]Point {
+    var points = try allocator.alloc(Point, depth_frame.height * depth_frame.width);
     var count: usize = 0;
 
-    for (0..frame.height) |v| {
-        for (0..frame.width) |u| {
-            const idx = v * frame.width + u;
-            const z_mm = frame.depth[idx];
+    for (0..depth_frame.height) |v| {
+        for (0..depth_frame.width) |u| {
+            const idx = v * depth_frame.width + u;
+            const z_mm = depth_frame.depth[idx];
             if (z_mm == 0) continue;
 
             const z: f64 = @as(f64, @floatFromInt(z_mm)) / 1000.0; // mm to meters
@@ -55,13 +64,13 @@ pub fn frameToPoints(allocator: std.mem.Allocator, frame: *Frame) ![]Point {
             const v_rgb = @as(isize, @intFromFloat(rgb_fx * prgb[1] / prgb[2] + rgb_cy));
 
             // 4. Check bounds
-            if (u_rgb < 0 or u_rgb >= @as(isize, @intCast(frame.width))) continue;
-            if (v_rgb < 0 or v_rgb >= @as(isize, @intCast(frame.height))) continue;
+            if (u_rgb < 0 or u_rgb >= @as(isize, @intCast(rgb_frame.width))) continue;
+            if (v_rgb < 0 or v_rgb >= @as(isize, @intCast(rgb_frame.height))) continue;
 
-            const rgb_idx = (@as(usize, @intCast(v_rgb)) * frame.width + @as(usize, @intCast(u_rgb))) * 3;
-            const r: u8 = frame.rgb[rgb_idx + 0];
-            const g: u8 = frame.rgb[rgb_idx + 1];
-            const b: u8 = frame.rgb[rgb_idx + 2];
+            const rgb_idx = (@as(usize, @intCast(v_rgb)) * rgb_frame.width + @as(usize, @intCast(u_rgb))) * 3;
+            const r: u8 = rgb_frame.rgb[rgb_idx + 0];
+            const g: u8 = rgb_frame.rgb[rgb_idx + 1];
+            const b: u8 = rgb_frame.rgb[rgb_idx + 2];
 
             points[count] = Point{
                 .x = pd[0],

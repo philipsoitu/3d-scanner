@@ -1,6 +1,5 @@
 const std = @import("std");
 const kinect = @import("kinect.zig");
-const point_cloud = @import("point_cloud.zig");
 const consumer = @import("consumer.zig");
 const config = @import("config.zig");
 const cli = @import("cli.zig");
