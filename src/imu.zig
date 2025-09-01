@@ -33,7 +33,10 @@ pub fn testImu(allocator: std.mem.Allocator) !void {
         const gyro_y = (@as(i16, @intCast(((@as(i16, data[10]) << 8) | data[11]))));
         const gyro_z = (@as(i16, @intCast(((@as(i16, data[12]) << 8) | data[13]))));
 
-        std.debug.print("Accel X={} Y={} Z={} | Gyro X={} Y={} Z={}\n", .{ accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z });
+        std.debug.print(
+            "Accel X={} Y={} Z={} | Gyro X={} Y={} Z={}\n",
+            .{ accel_x, accel_y, accel_z, gyro_x, gyro_y, gyro_z },
+        );
     }
 }
 
