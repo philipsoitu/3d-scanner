@@ -72,7 +72,7 @@ pub const Kinect = struct {
 
     pub fn runLoop(self: *Kinect) !void {
         const start_time = std.time.milliTimestamp();
-        while (std.time.milliTimestamp() - start_time < 10_000) {
+        while (std.time.milliTimestamp() - start_time < 30_000) {
             const result = c.freenect_process_events(self.ctx);
             if (result < 0) {
                 return error.EventLoopFailed;
