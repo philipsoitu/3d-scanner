@@ -1,29 +1,17 @@
 const std = @import("std");
 const Frame = @import("Frame.zig").Frame;
+const config = @import("../config.zig");
 
 pub const FramePair = struct {
     depth: u32,
     rgb: u32,
 
     pub fn generate(allocator: std.mem.Allocator) ![]FramePair {
-        //TODO:
-        // get list of frames of each type
-        // match nearest depth and rgb frames to each other
-        // generate cloud point of first frame
-        // while theres a frame remaining
-        //      get next frame
-        //      generate pointcloud
-        //      icp both pointclouds
-        //      save to global ply
-        std.debug.print("generate starting \n", .{});
-
         const depth_timestamps = try readTimestamps(allocator, "./kinect_output/depth/");
         defer allocator.free(depth_timestamps);
-        std.debug.print("depth frames count: {d}\n", .{depth_timestamps.len});
 
         const rgb_timestamps = try readTimestamps(allocator, "./kinect_output/rgb/");
         defer allocator.free(rgb_timestamps);
-        std.debug.print("rgb frames conut: {d}\n", .{rgb_timestamps.len});
 
         std.mem.sort(u32, depth_timestamps, {}, comptime std.sort.asc(u32));
         std.mem.sort(u32, rgb_timestamps, {}, comptime std.sort.asc(u32));
@@ -81,14 +69,113 @@ pub const FramePair = struct {
                 i += 1;
                 j += 1;
             } else if (ts_d < ts_r) {
-                // depth frame too far behind → drop it
+                // depth frame too far behind
                 i += 1;
             } else {
-                // rgb frame too far behind → drop it
+                // rgb frame too far behind
                 j += 1;
             }
         }
 
         return try matches.toOwnedSlice(allocator);
+    }
+
+    pub fn getDepthFrame(self: @This(), allocator: std.mem.Allocator) !Frame {
+        var filename_buf: [128]u8 = undefined;
+        const filename = try std.fmt.bufPrint(
+            &filename_buf,
+            "{s}/depth/{d}.pgm",
+            .{ config.OUTPUT_LOCATION, self.depth },
+        );
+
+        var file = try std.fs.cwd().openFile(filename, .{});
+        defer file.close();
+
+        var line_buf: [1024]u8 = undefined;
+        var file_reader = file.reader(&line_buf);
+        const r = &file_reader.interface;
+
+        const magic_number = try r.takeDelimiterExclusive('\n');
+        if (!std.mem.eql(u8, magic_number, "P5")) {
+            return error.InvalidFormat;
+        }
+
+        var dims: ?[]const u8 = null;
+        while (dims == null) {
+            const line = try r.takeDelimiterExclusive('\n');
+            if (line.len > 0 and line[0] != '#') {
+                dims = line; // skip comments until dimension
+            }
+        }
+
+        var it = std.mem.tokenizeScalar(u8, dims.?, ' ');
+        const width = try std.fmt.parseInt(u32, it.next().?, 10);
+        const height = try std.fmt.parseInt(u32, it.next().?, 10);
+
+        const max_val_line = try r.takeDelimiterExclusive('\n');
+        const max_val = try std.fmt.parseInt(u32, max_val_line, 10);
+        if (max_val != 65535) return error.UnsupportedFormat;
+
+        const pixels_buf = try allocator.alloc(u8, config.RGB_BUFFER_SIZE);
+        _ = try file.readAll(pixels_buf);
+
+        const frame = Frame{
+            .width = width,
+            .height = height,
+            .timestamp = self.depth,
+            .data = pixels_buf,
+            .type = .Depth,
+        };
+
+        return frame;
+    }
+
+    pub fn getRgbFrame(self: @This(), allocator: std.mem.Allocator) !Frame {
+        var filename_buf: [128]u8 = undefined;
+        const filename = try std.fmt.bufPrint(
+            &filename_buf,
+            "{s}/rgb/{d}.ppm",
+            .{ config.OUTPUT_LOCATION, self.rgb },
+        );
+
+        var file = try std.fs.cwd().openFile(filename, .{});
+        defer file.close();
+
+        var line_buf: [1024]u8 = undefined;
+        var file_reader = file.reader(&line_buf);
+        const r = &file_reader.interface;
+
+        const magic_number = try r.takeDelimiterExclusive('\n');
+        if (!std.mem.eql(u8, magic_number, "P6")) {
+            return error.InvalidFormat;
+        }
+
+        var dims: ?[]const u8 = null;
+        while (dims == null) {
+            const line = try r.takeDelimiterExclusive('\n');
+            if (line.len > 0 and line[0] != '#') {
+                dims = line; // skip comments until dimension
+            }
+        }
+
+        var it = std.mem.tokenizeScalar(u8, dims.?, ' ');
+        const width = try std.fmt.parseInt(u32, it.next().?, 10);
+        const height = try std.fmt.parseInt(u32, it.next().?, 10);
+
+        const max_val_line = try r.takeDelimiterExclusive('\n');
+        const max_val = try std.fmt.parseInt(u32, max_val_line, 10);
+        if (max_val != 255) return error.UnsupportedFormat;
+
+        const pixels_buf = try allocator.alloc(u8, config.RGB_BUFFER_SIZE);
+        _ = try file.readAll(pixels_buf);
+
+        const frame = Frame{
+            .width = width,
+            .height = height,
+            .timestamp = self.rgb,
+            .data = pixels_buf,
+            .type = .Rgb,
+        };
+        return frame;
     }
 };
