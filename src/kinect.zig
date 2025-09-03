@@ -124,9 +124,13 @@ export fn depth_callback(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp:
     const height = 480;
 
     const buf = ctx.depth_pool.acquire();
-    const raw_data = data.?;
-    const slice = @as([*]const u8, @ptrCast(raw_data))[0..buf.len];
-    @memcpy(buf, slice);
+    const raw_data = @as([*]const u16, @ptrCast(@alignCast(data.?)))[0 .. width * height];
+
+    // Convert each u16 little-endian into big-endian bytes
+    for (raw_data, 0..) |val, i| {
+        buf[i * 2] = @as(u8, @intCast((val >> 8) & 0xFF)); // hi byte
+        buf[i * 2 + 1] = @as(u8, @intCast(val & 0xFF)); // low byte
+    }
 
     ctx.depth_queue.push(Frame{
         .data = buf,

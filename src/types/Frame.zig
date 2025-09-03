@@ -45,17 +45,7 @@ pub const Frame = struct {
             ),
         }
         // raw binary data
-        if (self.type == .Depth) {
-            // flip endianness
-            for (0..self.width * self.height) |i| {
-                const lo = self.data[i * 2];
-                const hi = self.data[i * 2 + 1];
-                const be_bytes = [_]u8{ hi, lo };
-                try w.writeAll(&be_bytes);
-            }
-        } else if (self.type == .Rgb) {
-            try w.writeAll(self.data);
-        }
+        try w.writeAll(self.data);
 
         //cleanup
         try w.flush();
