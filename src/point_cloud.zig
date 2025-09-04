@@ -29,10 +29,12 @@ pub const Point = struct {
 };
 
 pub fn framesToPointCloud(allocator: std.mem.Allocator, frames: *const FramePair) ![]Point {
-    const depth_frame = try frames.getDepthFrame(allocator);
+    const frame_depth = try frames.getDepthFrame(allocator);
+    const depth_frame = frame_depth.depth;
     defer allocator.free(depth_frame.data);
 
-    const rgb_frame = try frames.getRgbFrame(allocator);
+    const frame_rgb = try frames.getRgbFrame(allocator);
+    const rgb_frame = frame_rgb.rgb;
     defer allocator.free(rgb_frame.data);
 
     const num_points = depth_frame.width * depth_frame.height;
@@ -40,16 +42,13 @@ pub fn framesToPointCloud(allocator: std.mem.Allocator, frames: *const FramePair
     var idx: usize = 0;
 
     for (0..num_points) |pix| {
-        const i = pix * 2;
-
-        // big endian depth
-        const d: u16 = (@as(u16, depth_frame.data[i]) << 8) | @as(u16, depth_frame.data[i + 1]);
+        const d: u16 = depth_frame.data[pix];
         if (d == 0) continue;
 
         const u = pix % depth_frame.width;
         const v = pix / depth_frame.width;
 
-        const z = @as(f64, @floatFromInt(d)) / 1000.0; // mm to meters
+        const z = @as(f64, @floatFromInt(d)) / 1000.0; // mm → m
         const x: f64 = ((@as(f64, @floatFromInt(u)) - depth_cx) * z) / depth_fx;
         const y: f64 = ((@as(f64, @floatFromInt(v)) - depth_cy) * z) / depth_fy;
 
@@ -57,6 +56,7 @@ pub fn framesToPointCloud(allocator: std.mem.Allocator, frames: *const FramePair
         const Yd = y;
         const Zd = z;
 
+        // Transform into RGB camera space
         const Xr = R[0][0] * Xd + R[0][1] * Yd + R[0][2] * Zd + T[0];
         const Yr = R[1][0] * Xd + R[1][1] * Yd + R[1][2] * Zd + T[1];
         const Zr = R[2][0] * Xd + R[2][1] * Yd + R[2][2] * Zd + T[2];
@@ -71,11 +71,15 @@ pub fn framesToPointCloud(allocator: std.mem.Allocator, frames: *const FramePair
         if (u_rgb >= 0 and u_rgb < @as(isize, @intCast(rgb_frame.width)) and
             v_rgb >= 0 and v_rgb < @as(isize, @intCast(rgb_frame.height)))
         {
-            const rgb_index: usize = @as(usize, @intCast(v_rgb)) * rgb_frame.width * 3 + @as(usize, @intCast(u_rgb)) * 3;
+            const rgb_index: usize =
+                @as(usize, @intCast(v_rgb)) * rgb_frame.width * 3 +
+                @as(usize, @intCast(u_rgb)) * 3;
+
             r = rgb_frame.data[rgb_index + 0];
             g = rgb_frame.data[rgb_index + 1];
             b = rgb_frame.data[rgb_index + 2];
         }
+
         points[idx] = Point{
             .x = Xd,
             .y = Yd,

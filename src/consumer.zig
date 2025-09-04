@@ -1,19 +1,20 @@
 const std = @import("std");
+
+const Frame = @import("types/Frame.zig").Frame;
 const Queue = @import("types/Queue.zig").Queue;
 const BufferPool = @import("types/BufferPool.zig").BufferPool;
-const Frame = @import("types/Frame.zig").Frame;
 
 pub fn thread(
     queue: *Queue,
     pool: *BufferPool,
 ) !void {
     while (true) {
-        const maybe_frame = queue.pop();
-        if (maybe_frame == null) break;
+        const maybe_kinect_frame = queue.pop();
+        if (maybe_kinect_frame) |kinect_frame| {
+            const frame = try Frame.fromKinectFrame(&kinect_frame);
+            try frame.save();
 
-        const frame = maybe_frame.?;
-        try frame.save();
-
-        pool.release(frame.data);
+            pool.release(kinect_frame.data);
+        }
     }
 }

@@ -3,8 +3,8 @@ const Frame = @import("Frame.zig").Frame;
 const config = @import("../config.zig");
 
 pub const FramePair = struct {
-    depth: u32,
-    rgb: u32,
+    depth_timestamp: u32,
+    rgb_timestamp: u32,
 
     pub fn generate(allocator: std.mem.Allocator) ![]FramePair {
         const depth_timestamps = try readTimestamps(allocator, "./kinect_output/depth/");
@@ -65,7 +65,7 @@ pub const FramePair = struct {
 
             if (diff <= max_gap) {
                 // good frame match
-                try matches.append(allocator, .{ .depth = ts_d, .rgb = ts_r });
+                try matches.append(allocator, .{ .depth_timestamp = ts_d, .rgb_timestamp = ts_r });
                 i += 1;
                 j += 1;
             } else if (ts_d < ts_r) {
@@ -85,7 +85,7 @@ pub const FramePair = struct {
         const filename = try std.fmt.bufPrint(
             &filename_buf,
             "{s}/depth/{d}.pgm",
-            .{ config.OUTPUT_LOCATION, self.depth },
+            .{ config.OUTPUT_LOCATION, self.depth_timestamp },
         );
 
         var file = try std.fs.cwd().openFile(filename, .{});
@@ -104,7 +104,7 @@ pub const FramePair = struct {
         while (dims == null) {
             const line = try r.takeDelimiterExclusive('\n');
             if (line.len > 0 and line[0] != '#') {
-                dims = line; // skip comments until dimension
+                dims = line;
             }
         }
 
@@ -116,18 +116,23 @@ pub const FramePair = struct {
         const max_val = try std.fmt.parseInt(u32, max_val_line, 10);
         if (max_val != 65535) return error.UnsupportedFormat;
 
-        const pixels_buf = try allocator.alloc(u8, config.RGB_BUFFER_SIZE);
-        _ = try file.readAll(pixels_buf);
+        const depth_buf = try allocator.alloc(u16, width * height);
+        const raw_bytes = std.mem.sliceAsBytes(depth_buf);
+        _ = try file.readAll(raw_bytes);
 
-        const frame = Frame{
-            .width = width,
-            .height = height,
-            .timestamp = self.depth,
-            .data = pixels_buf,
-            .type = .Depth,
+        // PGM stores big-endian 16-bit values; swap to little-endian
+        for (depth_buf) |*d| {
+            d.* = @as(u16, @byteSwap(d.*));
+        }
+
+        return Frame{
+            .depth = .{
+                .width = width,
+                .height = height,
+                .timestamp = self.depth_timestamp,
+                .data = depth_buf,
+            },
         };
-
-        return frame;
     }
 
     pub fn getRgbFrame(self: @This(), allocator: std.mem.Allocator) !Frame {
@@ -135,7 +140,7 @@ pub const FramePair = struct {
         const filename = try std.fmt.bufPrint(
             &filename_buf,
             "{s}/rgb/{d}.ppm",
-            .{ config.OUTPUT_LOCATION, self.rgb },
+            .{ config.OUTPUT_LOCATION, self.rgb_timestamp },
         );
 
         var file = try std.fs.cwd().openFile(filename, .{});
@@ -146,15 +151,13 @@ pub const FramePair = struct {
         const r = &file_reader.interface;
 
         const magic_number = try r.takeDelimiterExclusive('\n');
-        if (!std.mem.eql(u8, magic_number, "P6")) {
-            return error.InvalidFormat;
-        }
+        if (!std.mem.eql(u8, magic_number, "P6")) return error.InvalidFormat;
 
         var dims: ?[]const u8 = null;
         while (dims == null) {
             const line = try r.takeDelimiterExclusive('\n');
             if (line.len > 0 and line[0] != '#') {
-                dims = line; // skip comments until dimension
+                dims = line;
             }
         }
 
@@ -166,16 +169,16 @@ pub const FramePair = struct {
         const max_val = try std.fmt.parseInt(u32, max_val_line, 10);
         if (max_val != 255) return error.UnsupportedFormat;
 
-        const pixels_buf = try allocator.alloc(u8, config.RGB_BUFFER_SIZE);
+        const pixels_buf = try allocator.alloc(u8, width * height * 3);
         _ = try file.readAll(pixels_buf);
 
-        const frame = Frame{
-            .width = width,
-            .height = height,
-            .timestamp = self.rgb,
-            .data = pixels_buf,
-            .type = .Rgb,
+        return Frame{
+            .rgb = .{
+                .width = width,
+                .height = height,
+                .timestamp = self.rgb_timestamp,
+                .data = pixels_buf,
+            },
         };
-        return frame;
     }
 };

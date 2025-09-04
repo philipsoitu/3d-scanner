@@ -1,5 +1,5 @@
 const std = @import("std");
-const Frame = @import("types/Frame.zig").Frame;
+const KinectFrame = @import("types/KinectFrame.zig").KinectFrame;
 const Queue = @import("types/Queue.zig").Queue;
 const BufferPool = @import("types/BufferPool.zig").BufferPool;
 const c = @cImport({
@@ -103,12 +103,12 @@ export fn rgb_callback(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u
     const slice = @as([*]const u8, @ptrCast(raw_data))[0..buf.len];
     @memcpy(buf, slice);
 
-    ctx.rgb_queue.push(Frame{
+    ctx.rgb_queue.push(KinectFrame{
         .data = buf,
         .timestamp = timestamp,
         .width = width,
         .height = height,
-        .type = .Rgb,
+        .type = .rgb,
     }) catch {};
     ctx.rgb_index += 1;
 }
@@ -123,21 +123,17 @@ export fn depth_callback(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp:
     const width = 640;
     const height = 480;
 
-    const buf = ctx.depth_pool.acquire();
-    const raw_data = @as([*]const u16, @ptrCast(@alignCast(data.?)))[0 .. width * height];
+    const buf = ctx.rgb_pool.acquire();
+    const raw_data = data.?;
+    const slice = @as([]u8, @ptrCast(raw_data))[0..buf.len];
+    @memcpy(buf, slice);
 
-    // Convert each u16 little-endian into big-endian bytes
-    for (raw_data, 0..) |val, i| {
-        buf[i * 2] = @as(u8, @intCast((val >> 8) & 0xFF)); // hi byte
-        buf[i * 2 + 1] = @as(u8, @intCast(val & 0xFF)); // low byte
-    }
-
-    ctx.depth_queue.push(Frame{
-        .data = buf,
+    ctx.depth_queue.push(KinectFrame{
+        .data = slice,
         .timestamp = timestamp,
         .width = width,
         .height = height,
-        .type = .Depth,
+        .type = .depth,
     }) catch {};
     ctx.depth_index += 1;
 }

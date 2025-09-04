@@ -13,14 +13,14 @@ pub fn run(allocator: std.mem.Allocator) !void {
     std.debug.print("pairs: {}\n", .{pairs.len});
 
     for (pairs, 0..pairs.len) |pair, i| {
-        std.debug.print("{d} depth: {}, rgb: {}\n", .{ i + 1, pair.depth, pair.rgb });
+        std.debug.print("{d} depth: {}, rgb: {}\n", .{ i + 1, pair.depth_timestamp, pair.rgb_timestamp });
 
         // filename
         var filename_buf: [256]u8 = undefined;
         const filename = try std.fmt.bufPrint(
             &filename_buf,
             "{s}/pointcloud/d{d}_r{d}.ply",
-            .{ config.OUTPUT_LOCATION, pair.depth, pair.rgb },
+            .{ config.OUTPUT_LOCATION, pair.depth_timestamp, pair.rgb_timestamp },
         );
 
         // generate pointcloud

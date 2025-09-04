@@ -6,7 +6,6 @@ const cli = @import("cli.zig");
 
 const Queue = @import("types/Queue.zig").Queue;
 const BufferPool = @import("types/BufferPool.zig").BufferPool;
-const Frame = @import("types/Frame.zig").Frame;
 
 pub fn run(allocator: std.mem.Allocator) !void {
     var rgb_pool = try BufferPool.init(allocator, config.POOL_SIZE, config.RGB_BUFFER_SIZE);

@@ -1,9 +1,9 @@
 const std = @import("std");
-const Frame = @import("Frame.zig").Frame;
+const KinectFrame = @import("KinectFrame.zig").KinectFrame;
 
 pub const Queue = struct {
     allocator: std.mem.Allocator,
-    list: std.ArrayList(Frame),
+    list: std.ArrayList(KinectFrame),
     mutex: std.Thread.Mutex = .{},
     cond: std.Thread.Condition = .{},
     done: bool = false,
@@ -11,7 +11,7 @@ pub const Queue = struct {
     pub fn init(allocator: std.mem.Allocator) Queue {
         return Queue{
             .allocator = allocator,
-            .list = std.ArrayList(Frame){},
+            .list = std.ArrayList(KinectFrame){},
         };
     }
 
@@ -19,7 +19,7 @@ pub const Queue = struct {
         self.list.deinit(self.allocator);
     }
 
-    pub fn push(self: *Queue, frame: Frame) !void {
+    pub fn push(self: *Queue, frame: KinectFrame) !void {
         self.mutex.lock();
         defer self.mutex.unlock();
 
@@ -27,7 +27,7 @@ pub const Queue = struct {
         self.cond.signal();
     }
 
-    pub fn pop(self: *Queue) ?Frame {
+    pub fn pop(self: *Queue) ?KinectFrame {
         self.mutex.lock();
         defer self.mutex.unlock();
 

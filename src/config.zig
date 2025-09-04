@@ -3,6 +3,7 @@ pub const POOL_SIZE = 8;
 
 pub const RGB_BUFFER_SIZE = 640 * 480 * 3;
 pub const DEPTH_BUFFER_SIZE = 640 * 480 * 2;
+pub const DEPTH_BUFFER_SIZE_U16 = 640 * 480;
 
 pub const DEPTH_FX: f64 = 594.21;
 pub const DEPTH_FY: f64 = 591.04;
