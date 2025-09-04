@@ -24,7 +24,7 @@ pub fn run(allocator: std.mem.Allocator) !void {
         );
 
         // generate pointcloud
-        const point = try point_cloud.framesToPointCloud(allocator, &pair);
+        const point = try point_cloud.framePairToPointCloud(allocator, &pair);
         defer allocator.free(point);
 
         try point_cloud.writePLY(point, filename);
