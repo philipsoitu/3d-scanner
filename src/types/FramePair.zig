@@ -114,7 +114,7 @@ pub const FramePair = struct {
 
         const max_val_line = try r.takeDelimiterExclusive('\n');
         const max_val = try std.fmt.parseInt(u32, max_val_line, 10);
-        if (max_val != 65535) return error.UnsupportedFormat;
+        if (max_val != 2047) return error.UnsupportedFormat;
 
         const depth_buf = try allocator.alloc(u16, width * height);
         const raw_bytes = std.mem.sliceAsBytes(depth_buf);
