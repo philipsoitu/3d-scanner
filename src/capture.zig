@@ -21,12 +21,12 @@ pub fn run(allocator: std.mem.Allocator) !void {
     var rgb_thread = try std.Thread.spawn(
         .{},
         consumer.thread,
-        .{ &rgb_queue, &rgb_pool },
+        .{ &rgb_queue, &rgb_pool, allocator },
     );
     var depth_thread = try std.Thread.spawn(
         .{},
         consumer.thread,
-        .{ &depth_queue, &depth_pool },
+        .{ &depth_queue, &depth_pool, allocator },
     );
 
     var kinect_ctx = kinect.KinectCtx{
