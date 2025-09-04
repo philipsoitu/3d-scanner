@@ -1,5 +1,5 @@
 pub const KinectFrame = struct {
-    data: []u8,
+    data: []const u8,
     timestamp: u32,
     width: usize,
     height: usize,

@@ -14,7 +14,7 @@ pub const Frame = union(enum) {
                         .width = kinect_frame.width,
                         .height = kinect_frame.height,
                         .timestamp = kinect_frame.timestamp,
-                        .data = kinect_frame.data,
+                        .data = @constCast(kinect_frame.data),
                     },
                 };
             },

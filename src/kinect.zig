@@ -125,7 +125,7 @@ export fn depth_callback(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp:
 
     const buf = ctx.rgb_pool.acquire();
     const raw_data = data.?;
-    const slice = @as([]u8, @ptrCast(raw_data))[0..buf.len];
+    const slice = @as([*]const u8, @ptrCast(raw_data))[0..buf.len];
     @memcpy(buf, slice);
 
     ctx.depth_queue.push(KinectFrame{

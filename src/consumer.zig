@@ -14,7 +14,7 @@ pub fn thread(
             const frame = try Frame.fromKinectFrame(&kinect_frame);
             try frame.save();
 
-            pool.release(kinect_frame.data);
+            pool.release(@constCast(kinect_frame.data));
         }
     }
 }
