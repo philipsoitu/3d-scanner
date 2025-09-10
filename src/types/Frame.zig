@@ -72,7 +72,7 @@ pub const DepthFrame = struct {
 
         // Header
         try w.print(
-            "P5\n{d} {d}\n2047\n",
+            "P5\n{d} {d}\n4500\n",
             .{ self.*.width, self.*.height },
         );
         // raw binary data
