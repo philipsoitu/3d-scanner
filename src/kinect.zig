@@ -52,7 +52,7 @@ pub const Kinect = struct {
         // set modes
         _ = c.freenect_set_depth_mode(k.dev, c.freenect_find_depth_mode(
             c.FREENECT_RESOLUTION_MEDIUM,
-            c.FREENECT_DEPTH_MM,
+            c.FREENECT_DEPTH_REGISTERED,
         ));
         _ = c.freenect_set_video_mode(k.dev, c.freenect_find_video_mode(
             c.FREENECT_RESOLUTION_MEDIUM,
