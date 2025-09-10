@@ -123,7 +123,7 @@ export fn depth_callback(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp:
     const width = 640;
     const height = 480;
 
-    const buf = ctx.rgb_pool.acquire();
+    const buf = ctx.depth_pool.acquire();
     const raw_data = data.?;
     const slice = @as([*]const u8, @ptrCast(raw_data))[0..buf.len];
     @memcpy(buf, slice);
