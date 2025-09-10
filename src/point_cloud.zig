@@ -18,7 +18,8 @@ const R = [3][3]f64{
     .{ 0.0, 1.0, 0.0 },
     .{ 0.0, 0.0, 1.0 },
 };
-const T = [3]f64{ 0.020, 0.0, 0.0 }; // ~2.5 cm distance between cameras
+
+const T = [3]f64{ 0.025, 0.0, 0.0 };
 
 pub const Point = struct {
     x: f64,

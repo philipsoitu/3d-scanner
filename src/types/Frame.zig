@@ -24,10 +24,6 @@ pub const Frame = union(enum) {
 
                 // reinterpret Kinect bytes as u16 slice
                 const raw_u16 = std.mem.bytesAsSlice(u16, kinect_frame.data);
-                const count = @min(num_pixels, raw_u16.len);
-                for (0..count) |i| {
-                    buf[i] = @as(u16, @byteSwap(raw_u16[i]));
-                }
 
                 for (0..buf.len) |i| {
                     buf[i] = @as(u16, @byteSwap(raw_u16[i]));
