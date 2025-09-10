@@ -1,20 +1,13 @@
 const std = @import("std");
-const kinect = @import("kinect.zig");
-const consumer = @import("consumer.zig");
-const config = @import("config.zig");
 const cli = @import("cli.zig");
+
+const capture = @import("capture.zig");
+const generate = @import("generate.zig");
 const imu = @import("imu.zig");
 
-const capture = @import("capture.zig").run;
-const generate = @import("generate.zig").run;
-
-const Queue = @import("types/Queue.zig").Queue;
-const BufferPool = @import("types/BufferPool.zig").BufferPool;
-const Frame = @import("types/Frame.zig").Frame;
-
 const commands = [_]cli.Command{
-    .{ .name = "capture", .handler = capture },
-    .{ .name = "generate", .handler = generate },
+    .{ .name = "capture", .handler = capture.run },
+    .{ .name = "generate", .handler = generate.run },
     .{ .name = "test-imu", .handler = imu.testImu },
 };
 
