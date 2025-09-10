@@ -61,7 +61,7 @@ pub const Kinect = struct {
         ));
 
         // set callbacks
-        // c.freenect_set_depth_callback(k.dev, depth_callback);
+        c.freenect_set_depth_callback(k.dev, depth_callback);
         c.freenect_set_video_callback(k.dev, rgb_callback);
 
         // start streams
