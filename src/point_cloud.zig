@@ -52,32 +52,16 @@ pub fn framePairToPointCloud(allocator: std.mem.Allocator, frames: *const FrameP
             const x: f64 = ((@as(f64, @floatFromInt(u)) - depth_cx) * z) / depth_fx;
             const y: f64 = ((@as(f64, @floatFromInt(v)) - depth_cy) * z) / depth_fy;
 
-            const pd = [3]f64{ x, y, z };
+            const rgb_idx = idx * 3;
 
-            // P_rgb = R * P_d + T or whatever
-            var prgb: [3]f64 = undefined;
-            for (0..3) |row| {
-                prgb[row] = R[row][0] * pd[0] + R[row][1] * pd[1] + R[row][2] * pd[2] + T[row];
-            }
-
-            if (prgb[2] <= 0.0) continue; //behind rgb camera
-
-            const u_rgb = @as(isize, @intFromFloat(rgb_fx * prgb[0] / prgb[2] + rgb_cx));
-            const v_rgb = @as(isize, @intFromFloat(rgb_fx * prgb[1] / prgb[2] + rgb_cy));
-
-            // 4. Check bounds
-            if (u_rgb < 0 or u_rgb >= @as(isize, @intCast(rgb_frame.width))) continue;
-            if (v_rgb < 0 or v_rgb >= @as(isize, @intCast(rgb_frame.height))) continue;
-
-            const rgb_idx = (@as(usize, @intCast(v_rgb)) * rgb_frame.width + @as(usize, @intCast(u_rgb))) * 3;
             const r: u8 = rgb_frame.data[rgb_idx + 0];
             const g: u8 = rgb_frame.data[rgb_idx + 1];
             const b: u8 = rgb_frame.data[rgb_idx + 2];
 
             points[count] = Point{
-                .x = pd[0],
-                .y = -pd[1],
-                .z = -pd[2],
+                .x = x,
+                .y = -y,
+                .z = -z,
                 .r = linearToSrgb(r),
                 .g = linearToSrgb(g),
                 .b = linearToSrgb(b),
