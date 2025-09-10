@@ -2,6 +2,7 @@ const std = @import("std");
 const KinectFrame = @import("types/KinectFrame.zig").KinectFrame;
 const Queue = @import("types/Queue.zig").Queue;
 const BufferPool = @import("types/BufferPool.zig").BufferPool;
+const config = @import("config.zig");
 const c = @cImport({
     @cInclude("libfreenect/libfreenect.h");
 });
@@ -100,7 +101,7 @@ export fn rgb_callback(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp: u
 
     const buf = ctx.rgb_pool.acquire();
     const raw_data = data.?;
-    const slice = @as([*]const u8, @ptrCast(raw_data))[0..buf.len];
+    const slice = @as([*]const u8, @ptrCast(raw_data))[0..config.RGB_BUFFER_SIZE];
     @memcpy(buf, slice);
 
     ctx.rgb_queue.push(KinectFrame{
@@ -125,7 +126,7 @@ export fn depth_callback(dev: ?*c.freenect_device, data: ?*anyopaque, timestamp:
 
     const buf = ctx.depth_pool.acquire();
     const raw_data = data.?;
-    const slice = @as([*]const u8, @ptrCast(raw_data))[0..buf.len];
+    const slice = @as([*]const u8, @ptrCast(raw_data))[0..config.DEPTH_BUFFER_SIZE];
     @memcpy(buf, slice);
 
     ctx.depth_queue.push(KinectFrame{
