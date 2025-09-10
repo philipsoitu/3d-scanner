@@ -13,14 +13,6 @@ const rgb_fy = @import("config.zig").RGB_FY;
 const rgb_cx = @import("config.zig").RGB_CX;
 const rgb_cy = @import("config.zig").RGB_CY;
 
-const R = [3][3]f64{
-    .{ 1.0, 0.0, 0.0 },
-    .{ 0.0, 1.0, 0.0 },
-    .{ 0.0, 0.0, 1.0 },
-};
-
-const T = [3]f64{ 0.025, 0.0, 0.0 };
-
 pub const Point = struct {
     x: f64,
     y: f64,
