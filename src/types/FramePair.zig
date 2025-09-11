@@ -16,7 +16,7 @@ pub const FramePair = struct {
         std.mem.sort(u32, depth_timestamps, {}, comptime std.sort.asc(u32));
         std.mem.sort(u32, rgb_timestamps, {}, comptime std.sort.asc(u32));
 
-        const pairs = try matchAlignedFrames(allocator, depth_timestamps, rgb_timestamps, 30);
+        const pairs = try matchAlignedFrames(allocator, depth_timestamps, rgb_timestamps);
         return pairs;
     }
 
@@ -42,42 +42,51 @@ pub const FramePair = struct {
         return try list.toOwnedSlice(allocator);
     }
 
-    // TODO: Make this not be as strict (cuz im losing like 75% of the frames rn)
     fn matchAlignedFrames(
         allocator: std.mem.Allocator,
         depth: []const u32,
         rgb: []const u32,
-        frame_hz: u32,
     ) ![]@This() {
-        const expected_gap: u32 = @intFromFloat(1_000_000.0 / @as(f32, @floatFromInt(frame_hz)));
-        const max_gap: u32 = expected_gap * 2;
+        if (depth.len == 0 or rgb.len == 0) return allocator.alloc(FramePair, 0);
 
-        var matches = std.ArrayList(@This()){};
+        // kinect values
+        const clock_hz: f64 = 60_000_000.0;
+        const frame_hz: f64 = 30.0;
+
+        const frame_period_sec: f64 = 1.0 / frame_hz;
+        const units_per_frame: f64 = frame_period_sec * clock_hz;
+
+        // Half-frame tolerance in timestamp units.
+        const tolerance: f64 = units_per_frame / 2.0;
+
+        var pairs = std.ArrayList(@This()){};
 
         var i: usize = 0;
         var j: usize = 0;
-
         while (i < depth.len and j < rgb.len) {
-            const ts_d = depth[i];
-            const ts_r = rgb[j];
+            const dts: f64 = @floatFromInt(depth[i]);
+            const rts: f64 = @floatFromInt(rgb[j]);
+            const diff = rts - dts;
 
-            const diff = if (ts_d > ts_r) ts_d - ts_r else ts_r - ts_d;
-
-            if (diff <= max_gap) {
-                // good frame match
-                try matches.append(allocator, .{ .depth_timestamp = ts_d, .rgb_timestamp = ts_r });
+            if (@abs(diff) <= tolerance) {
+                // Good match within tolerance
+                try pairs.append(
+                    allocator,
+                    FramePair{
+                        .depth_timestamp = depth[i],
+                        .rgb_timestamp = rgb[j],
+                    },
+                );
                 i += 1;
                 j += 1;
-            } else if (ts_d < ts_r) {
-                // depth frame too far behind
-                i += 1;
+            } else if (diff < 0) {
+                j += 1;
             } else {
-                // rgb frame too far behind
-                j += 1;
+                i += 1;
             }
         }
 
-        return try matches.toOwnedSlice(allocator);
+        return pairs.toOwnedSlice(allocator);
     }
 
     pub fn getDepthFrame(self: @This(), allocator: std.mem.Allocator) !Frame {
