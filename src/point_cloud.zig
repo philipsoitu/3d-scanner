@@ -13,7 +13,7 @@ const rgb_fy = @import("config.zig").RGB_FY;
 const rgb_cx = @import("config.zig").RGB_CX;
 const rgb_cy = @import("config.zig").RGB_CY;
 
-pub const Point = struct {
+pub const Point = packed struct {
     x: f64,
     y: f64,
     z: f64,
@@ -65,7 +65,7 @@ pub fn framePairToPointCloud(allocator: std.mem.Allocator, frames: *const FrameP
 }
 
 pub fn writePLY(points: []const Point, filename: []const u8) !void {
-    var file = try std.fs.cwd().createFile(filename, .{}); // fixed
+    var file = try std.fs.cwd().createFile(filename, .{});
     defer file.close();
 
     var writer_buf: [4096]u8 = undefined;
@@ -73,16 +73,21 @@ pub fn writePLY(points: []const Point, filename: []const u8) !void {
     const w = &file_writer.interface;
 
     try w.print(
-        "ply\nformat ascii 1.0\nelement vertex {d}\nproperty float x\nproperty float y\nproperty float z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n",
+        "ply\nformat binary_little_endian 1.0\nelement vertex {d}\nproperty double x\nproperty double y\nproperty double z\nproperty uchar red\nproperty uchar green\nproperty uchar blue\nend_header\n",
         .{points.len},
     );
 
     for (points) |p| {
-        try w.print(
-            "{d:.3} {d:.3} {d:.3} {d} {d} {d}\n",
-            .{ p.x, p.y, p.z, p.r, p.g, p.b },
-        );
+        try w.writeStruct(Point{
+            .x = p.x,
+            .y = p.y,
+            .z = p.z,
+            .r = p.r,
+            .g = p.g,
+            .b = p.b,
+        }, std.builtin.Endian.little);
     }
+
     try w.flush();
 }
 
