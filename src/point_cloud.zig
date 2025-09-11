@@ -38,7 +38,7 @@ pub fn framePairToPointCloud(allocator: std.mem.Allocator, frames: *const FrameP
         for (0..depth_frame.width) |u| {
             const idx = v * depth_frame.width + u;
             const z_mm = depth_frame.data[idx];
-            if (z_mm == 0) continue;
+            if (z_mm == 0 or z_mm > 4500) continue;
 
             const z: f64 = @as(f64, @floatFromInt(z_mm)) / 1000.0; // mm to meters
             const x: f64 = ((@as(f64, @floatFromInt(u)) - depth_cx) * z) / depth_fx;
