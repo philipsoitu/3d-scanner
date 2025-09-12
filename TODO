@@ -1,0 +1,5 @@
+- Refactor point_cloud
+- Move pnm opening functions to Frame.zig
+- icp
+- gpu computing for pointcloud generation
+- rgb-d
