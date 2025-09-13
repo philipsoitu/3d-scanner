@@ -1,4 +1,5 @@
 const Mat3x3 = @import("Mat3x3.zig").Mat3x3;
+const Point = @import("../PointCloud.zig").Point;
 
 pub const Vec3 = struct {
     x: f64,
@@ -42,6 +43,14 @@ pub const Vec3 = struct {
             R.data[0][0] * self.x + R.data[0][1] * self.y + R.data[0][2] * self.z,
             R.data[1][0] * self.x + R.data[1][1] * self.y + R.data[1][2] * self.z,
             R.data[2][0] * self.x + R.data[2][1] * self.y + R.data[2][2] * self.z,
+        };
+    }
+
+    pub fn fromPoint(p: *Point) @This() {
+        return .{
+            .x = p.x,
+            .y = p.y,
+            .z = p.z,
         };
     }
 };

@@ -3,7 +3,7 @@ const config = @import("../config.zig");
 const Frame = @import("Frame.zig").Frame;
 const FramePair = @import("FramePair.zig").FramePair;
 
-const Point = packed struct {
+pub const Point = packed struct {
     x: f64,
     y: f64,
     z: f64,
