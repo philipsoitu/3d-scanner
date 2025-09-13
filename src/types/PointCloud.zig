@@ -99,9 +99,9 @@ pub const PointCloud = struct {
 
         // header
         while (true) {
-            const line = try r.takeDelimiterExclusive(&line_buf, '\n') orelse return error.InvalidPly;
+            const line = try r.takeDelimiterExclusive('\n');
             if (std.mem.startsWith(u8, line, "element vertex")) {
-                var it = std.mem.tokenize(u8, line, " ");
+                var it = std.mem.tokenizeScalar(u8, line, ' ');
                 _ = it.next(); // "element"
                 _ = it.next(); // "vertex"
                 verts = try std.fmt.parseInt(usize, it.next().?, 10);
@@ -114,6 +114,10 @@ pub const PointCloud = struct {
         for (0..verts) |i| {
             points[i] = try r.takeStruct(Point, .little);
         }
+
+        return @This(){
+            .points = points,
+        };
     }
 };
 
