@@ -1,4 +1,5 @@
 const std = @import("std");
+const config = @import("config.zig");
 const Vec3 = @import("types/math/Vec3.zig").Vec3;
 const Mat3x3 = @import("types/math/Mat3x3.zig").Mat3x3;
 const Mat4x4 = @import("types/math/Mat4x4.zig").Mat4x4;
@@ -7,8 +8,43 @@ const PointCloud = @import("types/PointCloud.zig").PointCloud;
 const Point = @import("types/PointCloud.zig").Point;
 
 pub fn run(allocator: std.mem.Allocator) !void {
-    std.debug.print("test\n", .{});
-    _ = allocator;
+    const pointclouds = try getPointclouds(allocator, "kinect_output/pointcloud/");
+    defer allocator.free(pointclouds);
+    std.debug.print("{d} pointclouds found\n", .{pointclouds.len});
+
+    // filename
+    var filename_buf: [256]u8 = undefined;
+    const filename = try std.fmt.bufPrint(
+        &filename_buf,
+        "{s}/pointcloud/{d}.ply",
+        .{ config.OUTPUT_LOCATION, pointclouds[0] },
+    );
+
+    var merged = try PointCloud.open(allocator, filename);
+    defer allocator.free(merged.points);
+
+    for (pointclouds[1..]) |p| {
+        var other_filename_buf: [256]u8 = undefined;
+        const other_filename = try std.fmt.bufPrint(
+            &other_filename_buf,
+            "{s}/pointcloud/{d}.ply",
+            .{ config.OUTPUT_LOCATION, p },
+        );
+
+        var next = try PointCloud.open(allocator, other_filename);
+        defer allocator.free(next.points);
+
+        try icp_align(&next, &merged, allocator);
+
+        const old = merged.len;
+        const new = old + next.len;
+        const buf = try allocator.realloc(Point, merged, new);
+        std.mem.copy(Point, buf[old..], next);
+        allocator.free(next);
+        merged = buf;
+    }
+    try merged.save("final.ply");
+    allocator.free(merged);
 }
 
 fn estimate_transform(src: *PointCloud, tgt: *PointCloud) !struct { R: Mat3x3, t: Vec3 } {
@@ -74,7 +110,7 @@ fn transform_points(pointcloud: *PointCloud, R: *Mat3x3, t: *Vec3) void {
     }
 }
 
-fn find_corresp(src: *PointCloud, tgt: *PointCloud, allocator: *std.mem.Allocator) !struct { srcs: *PointCloud, tgts: *PointCloud } {
+fn find_corresp(src: *PointCloud, tgt: *PointCloud, allocator: std.mem.Allocator) !struct { srcs: *PointCloud, tgts: *PointCloud } {
     const n = src.points.len;
     var srcs = try allocator.alloc(Point, n);
     var tgts = try allocator.alloc(Point, n);
@@ -113,10 +149,32 @@ fn find_corresp(src: *PointCloud, tgt: *PointCloud, allocator: *std.mem.Allocato
     return .{ .srcs = srcs, .tgts = tgts };
 }
 
-fn icp_align(src: *PointCloud, tgt: *PointCloud, allocator: *std.mem.Allocator) !void {
+fn icp_align(src: *PointCloud, tgt: *PointCloud, allocator: std.mem.Allocator) !void {
     for (0..20) |_| {
         const corresp = try find_corresp(src, tgt, allocator);
         const est = try estimate_transform(corresp.srcs, corresp.tgts, allocator);
         transform_points(src, est.R, est.t);
     }
+}
+
+fn getPointclouds(allocator: std.mem.Allocator, path: []const u8) ![]u32 {
+    var dir = try std.fs.cwd().openDir(path, .{ .iterate = true });
+    defer dir.close();
+
+    var list = std.ArrayList(u32){};
+
+    var it = dir.iterate();
+    while (try it.next()) |entry| {
+        if (entry.kind != .file) continue;
+
+        if (std.mem.endsWith(u8, entry.name, ".ply")) {
+            const dot_index = std.mem.lastIndexOfScalar(u8, entry.name, '.') orelse continue;
+            const number_str = entry.name[0..dot_index];
+
+            const ts = try std.fmt.parseInt(u32, number_str, 10);
+            try list.append(allocator, ts);
+        }
+    }
+
+    return try list.toOwnedSlice(allocator);
 }

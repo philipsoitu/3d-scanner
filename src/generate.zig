@@ -46,8 +46,8 @@ fn worker(thread_id: usize, pairs: []const FramePair, allocator: std.mem.Allocat
         var filename_buf: [256]u8 = undefined;
         const filename = try std.fmt.bufPrint(
             &filename_buf,
-            "{s}/pointcloud/d{d}_r{d}.ply",
-            .{ config.OUTPUT_LOCATION, pair.depth_timestamp, pair.rgb_timestamp },
+            "{s}/pointcloud/{d}.ply",
+            .{ config.OUTPUT_LOCATION, pair.depth_timestamp },
         );
 
         // generate pointcloud
