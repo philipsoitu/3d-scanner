@@ -1,9 +1,9 @@
 const std = @import("std");
-const point_cloud = @import("point_cloud.zig");
 const config = @import("config.zig");
 
 const Frame = @import("types/Frame.zig").Frame;
 const FramePair = @import("types/FramePair.zig").FramePair;
+const PointCloud = @import("types/PointCloud.zig").PointCloud;
 
 pub fn run(allocator: std.mem.Allocator) !void {
 
@@ -51,9 +51,9 @@ fn worker(thread_id: usize, pairs: []const FramePair, allocator: std.mem.Allocat
         );
 
         // generate pointcloud
-        const point = try point_cloud.framePairToPointCloud(allocator, &pair);
-        defer allocator.free(point);
+        const pointcloud = try PointCloud.fromFramePair(allocator, &pair);
+        defer allocator.free(pointcloud.points);
 
-        try point_cloud.writePLY(point, filename);
+        try pointcloud.save(filename);
     }
 }
