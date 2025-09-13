@@ -36,33 +36,33 @@ pub fn run(allocator: std.mem.Allocator) !void {
 
         try icp_align(&next, &merged, allocator);
 
-        const old = merged.len;
-        const new = old + next.len;
-        const buf = try allocator.realloc(Point, merged, new);
-        std.mem.copy(Point, buf[old..], next);
-        allocator.free(next);
-        merged = buf;
+        const old = merged.points.len;
+        const new_len = old + next.points.len;
+        const buf = try allocator.realloc(merged.points, new_len);
+        std.mem.copyForwards(Point, buf[old..], next.points);
+        allocator.free(next.points);
+        merged.points = buf;
     }
     try merged.save("final.ply");
-    allocator.free(merged);
+    allocator.free(merged.points);
 }
 
-fn estimate_transform(src: *PointCloud, tgt: *PointCloud) !struct { R: Mat3x3, t: Vec3 } {
+fn estimate_transform(src: *const PointCloud, tgt: *const PointCloud) !struct { R: Mat3x3, t: Vec3 } {
     const n = src.points.len;
 
-    var center_src: Vec3 = .{ 0, 0, 0 };
-    var center_tgt: Vec3 = .{ 0, 0, 0 };
+    var center_src: Vec3 = .{ .x = 0, .y = 0, .z = 0 };
+    var center_tgt: Vec3 = .{ .x = 0, .y = 0, .z = 0 };
 
     for (src.points) |ps| {
-        const vec_src = Vec3.fromPoint(ps);
+        const vec_src = Vec3.fromPoint(&ps);
         center_src = Vec3.add(&center_src, &vec_src);
     }
     for (tgt.points) |pt| {
-        const vec_tgt = Vec3.fromPoint(pt);
+        const vec_tgt = Vec3.fromPoint(&pt);
         center_tgt = Vec3.add(&center_tgt, &vec_tgt);
     }
-    center_src = Vec3.scalar_multiply(center_src, 1.0 / @as(f64, @floatFromInt(n)));
-    center_tgt = Vec3.scalar_multiply(center_tgt, 1.0 / @as(f64, @floatFromInt(n)));
+    center_src = Vec3.scalar_multiply(&center_src, 1.0 / @as(f64, @floatFromInt(n)));
+    center_tgt = Vec3.scalar_multiply(&center_tgt, 1.0 / @as(f64, @floatFromInt(n)));
 
     var H: Mat3x3 = .{ .data = .{
         .{ 0, 0, 0 },
@@ -70,10 +70,10 @@ fn estimate_transform(src: *PointCloud, tgt: *PointCloud) !struct { R: Mat3x3, t
         .{ 0, 0, 0 },
     } };
     for (0..n) |i| {
-        const src_vec = Vec3.fromPoint(src.points[i]);
-        const tgt_vec = Vec3.fromPoint(tgt.points[i]);
-        const a = Vec3.sub(&src_vec, center_src);
-        const b = Vec3.sub(&tgt_vec, center_src);
+        const src_vec = Vec3.fromPoint(&src.points[i]);
+        const tgt_vec = Vec3.fromPoint(&tgt.points[i]);
+        const a = Vec3.sub(&src_vec, &center_src);
+        const b = Vec3.sub(&tgt_vec, &center_src);
         const ab: Mat3x3 = .{ .data = .{
             .{ a.x * b.x, a.x * b.y, a.x * b.z },
             .{ a.y * b.x, a.y * b.y, a.y * b.z },
@@ -90,12 +90,12 @@ fn estimate_transform(src: *PointCloud, tgt: *PointCloud) !struct { R: Mat3x3, t
     } };
     const q = N.power_iter();
     const R = q.toRotationMatrix();
-    const rotated = Vec3.apply_rotation(&center_src, R);
+    const rotated = Vec3.apply_rotation(&center_src, &R);
     const t = Vec3.sub(&center_tgt, &rotated);
     return .{ .R = R, .t = t };
 }
 
-fn transform_points(pointcloud: *PointCloud, R: *Mat3x3, t: *Vec3) void {
+fn transform_points(pointcloud: *const PointCloud, R: *const Mat3x3, t: *const Vec3) void {
     for (pointcloud.points) |*p| {
         const v = Vec3{
             .x = p.x,
@@ -103,14 +103,14 @@ fn transform_points(pointcloud: *PointCloud, R: *Mat3x3, t: *Vec3) void {
             .z = p.z,
         };
 
-        const rv = Vec3.apply_rotation(&v, &R);
-        p.x = rv[0] + t[0];
-        p.y = rv[1] + t[1];
-        p.z = rv[2] + t[2];
+        const rv = Vec3.apply_rotation(&v, R);
+        p.x = rv.x + t.x;
+        p.y = rv.y + t.y;
+        p.z = rv.z + t.z;
     }
 }
 
-fn find_corresp(src: *PointCloud, tgt: *PointCloud, allocator: std.mem.Allocator) !struct { srcs: *PointCloud, tgts: *PointCloud } {
+fn find_corresp(src: *PointCloud, tgt: *PointCloud, allocator: std.mem.Allocator) !struct { srcs: PointCloud, tgts: PointCloud } {
     const n = src.points.len;
     var srcs = try allocator.alloc(Point, n);
     var tgts = try allocator.alloc(Point, n);
@@ -146,14 +146,14 @@ fn find_corresp(src: *PointCloud, tgt: *PointCloud, allocator: std.mem.Allocator
             .b = tgt.points[i].b,
         };
     }
-    return .{ .srcs = srcs, .tgts = tgts };
+    return .{ .srcs = .{ .points = srcs }, .tgts = .{ .points = tgts } };
 }
 
 fn icp_align(src: *PointCloud, tgt: *PointCloud, allocator: std.mem.Allocator) !void {
     for (0..20) |_| {
         const corresp = try find_corresp(src, tgt, allocator);
-        const est = try estimate_transform(corresp.srcs, corresp.tgts, allocator);
-        transform_points(src, est.R, est.t);
+        const est = try estimate_transform(&corresp.srcs, &corresp.tgts);
+        transform_points(src, &est.R, &est.t);
     }
 }
 

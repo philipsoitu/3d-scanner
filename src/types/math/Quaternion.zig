@@ -19,7 +19,7 @@ pub const Quaternion = struct {
         q.z *= invLen;
     }
 
-    pub fn toRotationMatrix(self: *@This()) Mat3x3 {
+    pub fn toRotationMatrix(self: *const @This()) Mat3x3 {
         return Mat3x3{ .data = .{
             .{ 1 - 2 * self.y * self.y - 2 * self.z * self.z, 2 * self.x * self.y - 2 * self.w * self.z, 2 * self.x * self.z + 2 * self.w * self.y },
             .{ 2 * self.x * self.y + 2 * self.w * self.z, 1 - 2 * self.x * self.x - 2 * self.z * self.z, 2 * self.y * self.z - 2 * self.w * self.x },

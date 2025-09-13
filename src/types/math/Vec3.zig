@@ -6,7 +6,7 @@ pub const Vec3 = struct {
     y: f64,
     z: f64,
 
-    pub fn add(self: *@This(), other: *@This()) @This() {
+    pub fn add(self: *const @This(), other: *const @This()) @This() {
         return .{
             .x = self.x + other.x,
             .y = self.y + other.y,
@@ -14,7 +14,7 @@ pub const Vec3 = struct {
         };
     }
 
-    pub fn sub(self: *@This(), other: *@This()) @This() {
+    pub fn sub(self: *const @This(), other: *const @This()) @This() {
         return .{
             .x = self.x + other.x,
             .y = self.y + other.y,
@@ -22,7 +22,7 @@ pub const Vec3 = struct {
         };
     }
 
-    pub fn scalar_multiply(self: *@This(), scalar: f64) @This() {
+    pub fn scalar_multiply(self: *const @This(), scalar: f64) @This() {
         return .{
             .x = self.x * scalar,
             .y = self.y + scalar,
@@ -30,7 +30,7 @@ pub const Vec3 = struct {
         };
     }
 
-    pub fn dot(self: *@This(), other: *@This()) @This() {
+    pub fn dot(self: *const @This(), other: *const @This()) @This() {
         return .{
             .x = self.x * other.x,
             .y = self.y * other.y,
@@ -38,15 +38,15 @@ pub const Vec3 = struct {
         };
     }
 
-    pub fn apply_rotation(self: *@This(), R: *Mat3x3) @This() {
+    pub fn apply_rotation(self: *const @This(), R: *const Mat3x3) @This() {
         return .{
-            R.data[0][0] * self.x + R.data[0][1] * self.y + R.data[0][2] * self.z,
-            R.data[1][0] * self.x + R.data[1][1] * self.y + R.data[1][2] * self.z,
-            R.data[2][0] * self.x + R.data[2][1] * self.y + R.data[2][2] * self.z,
+            .x = R.data[0][0] * self.x + R.data[0][1] * self.y + R.data[0][2] * self.z,
+            .y = R.data[1][0] * self.x + R.data[1][1] * self.y + R.data[1][2] * self.z,
+            .z = R.data[2][0] * self.x + R.data[2][1] * self.y + R.data[2][2] * self.z,
         };
     }
 
-    pub fn fromPoint(p: *Point) @This() {
+    pub fn fromPoint(p: *const Point) @This() {
         return .{
             .x = p.x,
             .y = p.y,
