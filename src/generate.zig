@@ -10,7 +10,6 @@ pub fn run(allocator: std.mem.Allocator) !void {
     // match nearest depth and rgb frames to each other
     const pairs = try FramePair.generate(allocator);
     defer allocator.free(pairs);
-    std.debug.print("pairs: {}\n", .{pairs.len});
 
     // get thread counts
     const cpu_count = try std.Thread.getCpuCount();
@@ -18,6 +17,19 @@ pub fn run(allocator: std.mem.Allocator) !void {
 
     const threads = try allocator.alloc(std.Thread, cpu_count);
     defer allocator.free(threads);
+
+    // const thread_width: usize = std.math.log10_int(cpu_count) + 1;
+    // const chunk_width: usize = std.math.log10_int(chunk_size) + 1;
+
+    // clear screen
+    std.debug.print("\x1b[2J", .{});
+
+    for (0..cpu_count) |t_id| {
+        std.debug.print(
+            "\x1b[{d};{d}HThread {d: >2}: {d: >3}/{d: >3}\n",
+            .{ t_id + 1, 0, t_id, 0, chunk_size },
+        );
+    }
 
     // initialize threads
     for (threads, 0..) |*t, t_id| {
@@ -33,13 +45,18 @@ pub fn run(allocator: std.mem.Allocator) !void {
     for (threads) |*t| {
         t.*.join();
     }
+
+    std.debug.print(
+        "\x1b[{d};1H",
+        .{cpu_count + 1},
+    );
 }
 
 fn worker(thread_id: usize, pairs: []const FramePair, allocator: std.mem.Allocator) !void {
     for (pairs, 0..pairs.len) |pair, i| {
         std.debug.print(
-            "thread:{d:0>2} frame:{d:0>3} depth: {}, rgb: {}\n",
-            .{ thread_id, i + 1, pair.depth_timestamp, pair.rgb_timestamp },
+            "\x1b[{d};1HThread {d: >2}: {d: >3}/{d: >3}\n",
+            .{ thread_id + 1, thread_id, i + 1, pairs.len },
         );
 
         // filename
