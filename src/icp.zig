@@ -23,7 +23,8 @@ pub fn run(allocator: std.mem.Allocator) !void {
     var merged = try PointCloud.open(allocator, filename);
     defer allocator.free(merged.points);
 
-    for (pointclouds[1..]) |p| {
+    for (pointclouds[1..], 1..) |p, i| {
+        std.debug.print("starting pointcloud: {d}\n", .{i});
         var other_filename_buf: [256]u8 = undefined;
         const other_filename = try std.fmt.bufPrint(
             &other_filename_buf,
@@ -73,7 +74,7 @@ fn estimate_transform(src: *const PointCloud, tgt: *const PointCloud) !struct { 
         const src_vec = Vec3.fromPoint(&src.points[i]);
         const tgt_vec = Vec3.fromPoint(&tgt.points[i]);
         const a = Vec3.sub(&src_vec, &center_src);
-        const b = Vec3.sub(&tgt_vec, &center_src);
+        const b = Vec3.sub(&tgt_vec, &center_tgt);
         const ab: Mat3x3 = .{ .data = .{
             .{ a.x * b.x, a.x * b.y, a.x * b.z },
             .{ a.y * b.x, a.y * b.y, a.y * b.z },
@@ -132,9 +133,9 @@ fn find_corresp(src: *PointCloud, tgt: *PointCloud, allocator: std.mem.Allocator
             .x = s.x,
             .y = s.y,
             .z = s.z,
-            .r = src.points[i].r,
-            .g = src.points[i].g,
-            .b = src.points[i].b,
+            .r = src.points[best].r,
+            .g = src.points[best].g,
+            .b = src.points[best].b,
         };
 
         tgts[i] = Point{
@@ -150,7 +151,8 @@ fn find_corresp(src: *PointCloud, tgt: *PointCloud, allocator: std.mem.Allocator
 }
 
 fn icp_align(src: *PointCloud, tgt: *PointCloud, allocator: std.mem.Allocator) !void {
-    for (0..20) |_| {
+    for (0..20) |it| {
+        std.debug.print("iteration: {d}/20\n", .{it + 1});
         const corresp = try find_corresp(src, tgt, allocator);
         const est = try estimate_transform(&corresp.srcs, &corresp.tgts);
         transform_points(src, &est.R, &est.t);
